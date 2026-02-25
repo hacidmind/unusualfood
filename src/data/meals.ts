@@ -160,18 +160,18 @@ export const meals: Meal[] = [
     ]
   },
   {
-    name: "Akamu and Akara",
+    name: "Pap and Akara",
     slot: "Breakfast",
     area: "Lagos",
     calories: 450,
-    portion: "1 cup akamu + 4 pieces akara",
+    portion: "1 cup pap + 4 pieces akara",
     weightLossFriendly: false,
     dietType: "Vegan",
     ingredients: ["Corn flour", "Bean flour", "Onion", "Pepper", "Palm oil"],
     howToCook: [
-      "Make smooth corn paste with water.",
+      "Make smooth corn pap with water.",
       "Mix bean paste with pepper and onion.",
-      "Deep fry akara until golden and serve with akamu."
+      "Deep fry akara until golden and serve with pap."
     ]
   },
   {
@@ -220,33 +220,33 @@ export const meals: Meal[] = [
     ]
   },
   {
-    name: "Lentil and Vegetable Stew",
+    name: "Nigerian Pepper Soup",
     slot: "Lunch",
     area: "Lagos",
-    calories: 340,
-    portion: "1.5 cups stew",
+    calories: 280,
+    portion: "1.5 cups soup",
     weightLossFriendly: true,
-    dietType: "Vegan",
-    ingredients: ["Red lentils", "Carrot", "Celery", "Tomato", "Onion", "Herbs"],
+    dietType: "Mixed",
+    ingredients: ["Beef", "Scotch bonnet peppers", "Ginger", "Garlic", "Stock", "Leafy greens"],
     howToCook: [
-      "Saute onion and aromatics.",
-      "Add lentils and vegetables.",
-      "Simmer until lentils are tender."
+      "Boil beef in seasoned water until tender.",
+      "Blend peppers, ginger, and garlic into paste.",
+      "Add paste to beef broth and simmer with greens for 10 minutes."
     ]
   },
   {
-    name: "Roasted Vegetables and Quinoa",
+    name: "Pepper Rice and Beef",
     slot: "Dinner",
     area: "Lagos",
-    calories: 300,
-    portion: "1 cup quinoa + 2 cups roasted vegetables",
-    weightLossFriendly: true,
-    dietType: "Vegan",
-    ingredients: ["Quinoa", "Broccoli", "Bell pepper", "Zucchini", "Olive oil", "Spices"],
+    calories: 420,
+    portion: "1.5 cups pepper rice + 100g beef",
+    weightLossFriendly: false,
+    dietType: "Mixed",
+    ingredients: ["Rice", "Red pepper", "Tomato", "Onion", "Beef", "Palm oil", "Stock"],
     howToCook: [
-      "Cook quinoa in vegetable stock.",
-      "Toss vegetables with olive oil and spices.",
-      "Roast at 400°F for 25 minutes until caramelized."
+      "Fry red pepper base with onions in minimal oil.",
+      "Add chopped beef and cook until tender.",
+      "Add rice, stock, and cook covered until rice is done."
     ]
   }
 ];

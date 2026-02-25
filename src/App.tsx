@@ -14,35 +14,35 @@ const slotIcons: Record<MealSlot, string> = {
 
 const mealImageMap: Record<string, string> = {
   "Pap (Ogi) and Moi Moi":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Yam and Egg Sauce":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1609501676725-7186f017a4b0?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Ofada Rice and Ayamase (Light)":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Jollof Rice and Grilled Chicken":
-    "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1598158781514-e2b34129b00f?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Efo Riro with Fish and Small Swallow":
-    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Beans and Plantain":
-    "https://images.unsplash.com/photo-1609501676725-7186f017a4b0?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1609501676725-7186f017a4b0?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Egg White Omelette and Whole Wheat Toast":
-    "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Grilled Fish and Steamed Vegetables":
-    "https://images.unsplash.com/photo-1580959375944-abd7e991a971?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1580959375944-abd7e991a971?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Vegetable Soup with Lean Chicken":
-    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop",
-  "Akamu and Akara":
-    "https://images.unsplash.com/photo-1630383249896-424e7b14320e?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1547592166-23ac45744acd?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
+  "Pap and Akara":
+    "https://images.unsplash.com/photo-1630383249896-424e7b14320e?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Eba and Light Egusi Soup":
-    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Okra Soup with Fufu":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
   "Smoothie Bowl with Fruits":
-    "https://images.unsplash.com/photo-1590080876351-cd8c26fe7e0a?w=400&h=300&fit=crop",
-  "Lentil and Vegetable Stew":
-    "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=300&fit=crop",
-  "Roasted Vegetables and Quinoa":
-    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop"
+    "https://images.unsplash.com/photo-1590080876351-cd8c26fe7e0a?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
+  "Nigerian Pepper Soup":
+    "https://images.unsplash.com/photo-1547592166-23ac45744acd?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
+  "Pepper Rice and Beef":
+    "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max"
 };
 
 function LoginSignUp() {
