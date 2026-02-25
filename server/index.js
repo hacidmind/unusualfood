@@ -3,6 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
+import User from './models/User.js';
+import SavedPlan from './models/SavedPlan.js';
 
 dotenv.config();
 
@@ -10,15 +13,30 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// ⚠️ TESTING MODE - In-memory storage (no MongoDB)
-// This is for development/testing only. Will reset when server restarts.
+const MONGODB_URI = process.env.MONGODB_URI;
+let dbEnabled = false;
+
+if (MONGODB_URI) {
+  console.log('Attempting MongoDB connection...');
+  mongoose.connect(MONGODB_URI)
+    .then(() => {
+      dbEnabled = true;
+      console.log('✅ MongoDB connected - persistent storage enabled');
+    })
+    .catch((err) => {
+      dbEnabled = false;
+      console.error('❌ MongoDB connection failed, falling back to in-memory mode:', err.message || err);
+    });
+} else {
+  console.log('⚠️  MONGODB_URI not set - running in TEST MODE (In-Memory Storage)');
+  console.log('📝 Data will be reset when server restarts\n');
+}
+
+// In-memory fallbacks for development/testing
 const users = {};
 const savedPlans = {};
 let userIdCounter = 1;
 let planIdCounter = 1;
-
-console.log('⚠️  SERVER RUNNING IN TEST MODE (No MongoDB)');
-console.log('📝 Data will be reset when server restarts\n');
 
 // Middleware
 app.use(cors());
@@ -36,6 +54,88 @@ const verifyToken = (req, res, next) => {
   });
 };
 
+// Helper functions that switch between MongoDB and in-memory storage
+const findUserByEmail = async (email) => {
+  if (dbEnabled) return await User.findOne({ email: email.toLowerCase() });
+  return Object.values(users).find(u => u.email === email.toLowerCase());
+};
+
+const createUser = async ({ email, password, fullName }) => {
+  if (dbEnabled) {
+    const user = new User({ email: email.toLowerCase(), password, fullName });
+    return await user.save();
+  }
+  const userId = String(userIdCounter++);
+  users[userId] = {
+    id: userId,
+    email: email.toLowerCase(),
+    password: await bcrypt.hash(password, 10),
+    fullName: fullName || 'User',
+    currentWeight: 75,
+    weightGoal: 65,
+    dietType: 'Mixed',
+    adultsCount: 2,
+    childrenCount: 1,
+    createdAt: new Date()
+  };
+  return users[userId];
+};
+
+const findUserById = async (id) => {
+  if (dbEnabled) return await User.findById(id).select('-password');
+  return users[id];
+};
+
+const updateUserById = async (id, updates) => {
+  if (dbEnabled) {
+    const user = await User.findById(id);
+    if (!user) return null;
+    Object.assign(user, updates);
+    user.updatedAt = new Date();
+    return await user.save();
+  }
+  const user = users[id];
+  if (!user) return null;
+  Object.assign(user, updates);
+  user.updatedAt = new Date();
+  return user;
+};
+
+const savePlanForUser = async (userId, planName, meals) => {
+  if (dbEnabled) {
+    const plan = new SavedPlan({ userId, planName, meals, weeklyPlan: meals });
+    return await plan.save();
+  }
+  const planId = String(planIdCounter++);
+  savedPlans[planId] = {
+    id: planId,
+    userId,
+    planName: planName || 'My Meal Plan',
+    meals,
+    weeklyPlan: meals,
+    createdAt: new Date()
+  };
+  return savedPlans[planId];
+};
+
+const getPlansForUser = async (userId) => {
+  if (dbEnabled) return await SavedPlan.find({ userId }).sort({ createdAt: -1 });
+  return Object.values(savedPlans).filter(p => p.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+};
+
+const deletePlanById = async (planId, userId) => {
+  if (dbEnabled) {
+    const plan = await SavedPlan.findById(planId);
+    if (!plan || String(plan.userId) !== String(userId)) return false;
+    await plan.deleteOne();
+    return true;
+  }
+  const plan = savedPlans[planId];
+  if (!plan || plan.userId !== userId) return false;
+  delete savedPlans[planId];
+  return true;
+};
+
 // Routes
 
 // Register
@@ -48,38 +148,22 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = Object.values(users).find(u => u.email === email.toLowerCase());
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const created = await createUser({ email, password, fullName });
 
-    // Create user
-    const userId = String(userIdCounter++);
-    users[userId] = {
-      id: userId,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      fullName: fullName || 'User',
-      currentWeight: 75,
-      weightGoal: 65,
-      dietType: 'Mixed',
-      adultsCount: 2,
-      childrenCount: 1,
-      createdAt: new Date()
-    };
-
-    const token = jwt.sign({ id: userId, email: users[userId].email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: created.id || created._id, email: created.email }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
       message: 'Registration successful',
       token,
       user: {
-        id: userId,
-        email: users[userId].email,
-        fullName: users[userId].fullName
+        id: created.id || created._id,
+        email: created.email,
+        fullName: created.fullName || fullName
       }
     });
   } catch (error) {
@@ -97,23 +181,30 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = Object.values(users).find(u => u.email === email.toLowerCase());
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    let passwordValid = false;
+    if (dbEnabled) {
+      passwordValid = await user.comparePassword(password);
+    } else {
+      passwordValid = await bcrypt.compare(password, user.password);
+    }
+
+    if (!passwordValid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    const id = user.id || user._id;
+    const token = jwt.sign({ id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
       message: 'Login successful',
       token,
       user: {
-        id: user.id,
+        id,
         email: user.email,
         fullName: user.fullName,
         currentWeight: user.currentWeight,
@@ -130,15 +221,15 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Get user profile
-app.get('/api/profile', verifyToken, (req, res) => {
+app.get('/api/profile', verifyToken, async (req, res) => {
   try {
-    const user = users[req.userId];
+    const user = await findUserById(req.userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     res.json({
-      id: user.id,
+      id: user.id || user._id,
       email: user.email,
       fullName: user.fullName,
       currentWeight: user.currentWeight,
@@ -154,24 +245,21 @@ app.get('/api/profile', verifyToken, (req, res) => {
 });
 
 // Update user profile
-app.put('/api/profile', verifyToken, (req, res) => {
+app.put('/api/profile', verifyToken, async (req, res) => {
   try {
     const { fullName, currentWeight, weightGoal, dietType, adultsCount, childrenCount } = req.body;
 
-    const user = users[req.userId];
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    const updates = { fullName, currentWeight, weightGoal, dietType, adultsCount, childrenCount };
+    // Remove undefined keys
+    Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
 
-    user.fullName = fullName || user.fullName;
-    user.currentWeight = currentWeight || user.currentWeight;
-    user.weightGoal = weightGoal || user.weightGoal;
-    user.dietType = dietType || user.dietType;
-    user.adultsCount = adultsCount || user.adultsCount;
-    user.childrenCount = childrenCount || user.childrenCount;
-    user.updatedAt = new Date();
+    const user = await updateUserById(req.userId, updates);
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
-    res.json({ message: 'Profile updated successfully', user: { ...user, password: undefined } });
+    const responseUser = dbEnabled ? user.toObject() : { ...user };
+    if (responseUser.password) delete responseUser.password;
+
+    res.json({ message: 'Profile updated successfully', user: responseUser });
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
@@ -179,21 +267,11 @@ app.put('/api/profile', verifyToken, (req, res) => {
 });
 
 // Save meal plan
-app.post('/api/plans', verifyToken, (req, res) => {
+app.post('/api/plans', verifyToken, async (req, res) => {
   try {
     const { planName, meals } = req.body;
-
-    const planId = String(planIdCounter++);
-    savedPlans[planId] = {
-      id: planId,
-      userId: req.userId,
-      planName: planName || 'My Meal Plan',
-      meals: meals,
-      weeklyPlan: meals,
-      createdAt: new Date()
-    };
-
-    res.json({ message: 'Plan saved successfully', planId });
+    const saved = await savePlanForUser(req.userId, planName, meals);
+    res.json({ message: 'Plan saved successfully', planId: saved.id || saved._id });
   } catch (error) {
     console.error('Plan save error:', error);
     res.status(500).json({ error: 'Failed to save plan', details: error.message });
@@ -201,12 +279,9 @@ app.post('/api/plans', verifyToken, (req, res) => {
 });
 
 // Get user's saved plans
-app.get('/api/plans', verifyToken, (req, res) => {
+app.get('/api/plans', verifyToken, async (req, res) => {
   try {
-    const userPlans = Object.values(savedPlans)
-      .filter(plan => plan.userId === req.userId)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
+    const userPlans = await getPlansForUser(req.userId);
     res.json(userPlans);
   } catch (error) {
     console.error('Plans fetch error:', error);
@@ -215,16 +290,10 @@ app.get('/api/plans', verifyToken, (req, res) => {
 });
 
 // Delete saved plan
-app.delete('/api/plans/:planId', verifyToken, (req, res) => {
+app.delete('/api/plans/:planId', verifyToken, async (req, res) => {
   try {
-    const plan = savedPlans[req.params.planId];
-
-    if (!plan || plan.userId !== req.userId) {
-      return res.status(404).json({ error: 'Plan not found' });
-    }
-
-    delete savedPlans[req.params.planId];
-
+    const ok = await deletePlanById(req.params.planId, req.userId);
+    if (!ok) return res.status(404).json({ error: 'Plan not found' });
     res.json({ message: 'Plan deleted successfully' });
   } catch (error) {
     console.error('Plan delete error:', error);
@@ -236,16 +305,16 @@ app.delete('/api/plans/:planId', verifyToken, (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'Server is running',
-    mode: 'TEST MODE (In-Memory Storage)',
-    database: 'MongoDB - DISABLED',
-    note: 'Data will reset when server restarts. To enable MongoDB, check server/index.js'
+    mode: dbEnabled ? 'PRODUCTION (MongoDB enabled)' : 'TEST MODE (In-Memory Storage)',
+    database: dbEnabled ? 'MongoDB - ENABLED' : 'MongoDB - DISABLED',
+    note: dbEnabled ? 'Persistent storage is active' : 'Data will reset when server restarts. To enable MongoDB, set MONGODB_URI in server/.env'
   });
 });
 
 // Start server
 app.listen(PORT, () => {
   console.log(`🍽️ Unusual Chop Planner server running on http://localhost:${PORT}`);
-  console.log(`📊 Storage: In-Memory (Test/Development Mode)\n`);
+  console.log(`📊 Storage: ${dbEnabled ? 'MongoDB (Persistent)' : 'In-Memory (Test)'}\n`);
   console.log('✅ All endpoints are working!');
   console.log('📋 Try: curl http://localhost:5000/api/health\n');
 });
