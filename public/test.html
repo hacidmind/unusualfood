@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chop Planner - Manual Test</title>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .test-card {
+            background-color: #1e2933;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        .pass { color: #4ade80; }
+        .fail { color: #f87171; }
+        button {
+            background-color: #0D47A1;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🍽️ Chop Planner - Test Page</h1>
+    <p>Use this page to verify the backend and frontend are working correctly.</p>
+    
+    <div class="test-card">
+        <h3>Backend Health</h3>
+        <p id="backendStatus">Checking...</p>
+        <button onclick="checkBackend()">Test Backend</button>
+    </div>
+
+    <div class="test-card">
+        <h3>Test Registration</h3>
+        <input type="email" id="testEmail" placeholder="test@example.com" />
+        <input type="password" id="testPassword" placeholder="password" />
+        <input type="text" id="testName" placeholder="Full Name" />
+        <button onclick="testRegister()">Register Account</button>
+        <p id="registerResult"></p>
+    </div>
+
+    <div class="test-card">
+        <h3>Test Login</h3>
+        <input type="email" id="loginEmail" placeholder="test@example.com" />
+        <input type="password" id="loginPassword" placeholder="password" />
+        <button onclick="testLogin()">Login</button>
+        <p id="loginResult"></p>
+    </div>
+
+    <script>
+        async function checkBackend() {
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                const data = await response.json();
+                document.getElementById('backendStatus').innerHTML = 
+                    `<span class="pass">✓ Backend is running!</span><br>
+                     Mode: ${data.mode}<br>
+                     Status: ${data.status}`;
+            } catch (error) {
+                document.getElementById('backendStatus').innerHTML = 
+                    `<span class="fail">✗ Backend error: ${error.message}</span>`;
+            }
+        }
+
+        async function testRegister() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            const fullName = document.getElementById('testName').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, fullName })
+                });
+                const data = await response.json();
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    document.getElementById('registerResult').innerHTML = 
+                        `<span class="pass">✓ Registration successful!</span>`;
+                } else {
+                    document.getElementById('registerResult').innerHTML = 
+                        `<span class="fail">✗ ${data.error}</span>`;
+                }
+            } catch (error) {
+                document.getElementById('registerResult').innerHTML = 
+                    `<span class="fail">✗ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    document.getElementById('loginResult').innerHTML = 
+                        `<span class="pass">✓ Login successful!</span><br>Token saved to localStorage`;
+                } else {
+                    document.getElementById('loginResult').innerHTML = 
+                        `<span class="fail">✗ ${data.error}</span>`;
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 
+                    `<span class="fail">✗ Error: ${error.message}</span>`;
+            }
+        }
+
+        // Check backend on page load
+        checkBackend();
+    </script>
+</body>
+</html>

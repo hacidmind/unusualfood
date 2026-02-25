@@ -14,35 +14,35 @@ const slotIcons: Record<MealSlot, string> = {
 
 const mealImageMap: Record<string, string> = {
   "Pap (Ogi) and Moi Moi":
-    "https://media.premiumtimesng.com/wp-content/files/2020/11/Akamu-cover-pic.jpg",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
   "Yam and Egg Sauce":
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRX18gSnAMoYZEV3qsDd2W7vPjBTE-DALSdng&s",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
   "Ofada Rice and Ayamase (Light)":
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1ZcckYYpEV6divYH_qqRbcFopBv78SIyX3g&s",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
   "Jollof Rice and Grilled Chicken":
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyyuGA5P81pMfWntKakMF4LtW0FEWVogtfEQ&s",
+    "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=400&h=300&fit=crop",
   "Efo Riro with Fish and Small Swallow":
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSdddqo1YIX3mfXKbZLntAH-UH5n-_fghDRJA&s",
+    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop",
   "Beans and Plantain":
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1ZcckYYpEV6divYH_qqRbcFopBv78SIyX3g&s",
+    "https://images.unsplash.com/photo-1609501676725-7186f017a4b0?w=400&h=300&fit=crop",
   "Egg White Omelette and Whole Wheat Toast":
-    "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400",
+    "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400&h=300&fit=crop",
   "Grilled Fish and Steamed Vegetables":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
+    "https://images.unsplash.com/photo-1580959375944-abd7e991a971?w=400&h=300&fit=crop",
   "Vegetable Soup with Lean Chicken":
-    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400",
+    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop",
   "Akamu and Akara":
-    "https://images.unsplash.com/photo-1630383249896-424e7b14320e?w=400",
+    "https://images.unsplash.com/photo-1630383249896-424e7b14320e?w=400&h=300&fit=crop",
   "Eba and Light Egusi Soup":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
+    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop",
   "Okra Soup with Fufu":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
   "Smoothie Bowl with Fruits":
-    "https://images.unsplash.com/photo-1590080876351-cd8c26fe7e0a?w=400",
+    "https://images.unsplash.com/photo-1590080876351-cd8c26fe7e0a?w=400&h=300&fit=crop",
   "Lentil and Vegetable Stew":
-    "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400",
+    "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=300&fit=crop",
   "Roasted Vegetables and Quinoa":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400"
+    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop"
 };
 
 function LoginSignUp() {
@@ -60,13 +60,19 @@ function LoginSignUp() {
 
     try {
       const result = await api.login(email, password);
+      console.log("Login result:", result);
       if (result.error) {
         setError(result.error);
-      } else {
+      } else if (result.token) {
+        console.log("Login successful, setting token:", result.token);
         auth.setToken(result.token);
-        window.location.reload();
+        // Give it a moment for localStorage to sync, then reload
+        setTimeout(() => window.location.reload(), 100);
+      } else {
+        setError("No token received from server");
       }
     } catch (err) {
+      console.error("Login error:", err);
       setError("Failed to connect to server. Make sure backend is running on port 5000");
     } finally {
       setLoading(false);
@@ -80,13 +86,19 @@ function LoginSignUp() {
 
     try {
       const result = await api.register(email, password, fullName);
+      console.log("Register result:", result);
       if (result.error) {
         setError(result.error);
-      } else {
+      } else if (result.token) {
+        console.log("Registration successful, setting token:", result.token);
         auth.setToken(result.token);
-        window.location.reload();
+        // Give it a moment for localStorage to sync, then reload
+        setTimeout(() => window.location.reload(), 100);
+      } else {
+        setError("No token received from server");
       }
     } catch (err) {
+      console.error("Register error:", err);
       setError("Failed to connect to server. Make sure backend is running on port 5000");
     } finally {
       setLoading(false);
@@ -94,19 +106,43 @@ function LoginSignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primaryBlack via-slate-950 to-primaryBlue flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900/90 p-8 shadow-panel">
-        <h1 className="text-3xl font-bold text-white text-center mb-2">🍽️ Chop Planner</h1>
-        <p className="text-slate-300 text-center mb-8">Your weekly Lagos meal plan</p>
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(to bottom, #0b0f19, #1e293b, #0d47a1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "16px",
+      fontFamily: "Arial, sans-serif"
+    }}>
+      <div style={{
+        width: "100%",
+        maxWidth: "448px",
+        borderRadius: "16px",
+        border: "1px solid #475569",
+        background: "rgba(15, 23, 42, 0.9)",
+        padding: "32px",
+        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.25)"
+      }}>
+        <h1 style={{ fontSize: "30px", fontWeight: "bold", color: "white", textAlign: "center", marginBottom: "8px" }}>🍽️ Chop Planner</h1>
+        <p style={{ color: "#cbd5e1", textAlign: "center", marginBottom: "32px" }}>Your weekly Lagos meal plan</p>
 
-        <form onSubmit={authScreen === "login" ? handleLogin : handleRegister} className="space-y-4">
+        <form onSubmit={authScreen === "login" ? handleLogin : handleRegister} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {authScreen === "register" && (
             <input
               type="text"
               placeholder="Full Name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white placeholder-slate-400"
+              style={{
+                width: "100%",
+                borderRadius: "8px",
+                border: "1px solid #475569",
+                background: "#1e293b",
+                padding: "12px",
+                color: "white",
+                fontSize: "14px"
+              }}
               required
             />
           )}
@@ -116,7 +152,15 @@ function LoginSignUp() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white placeholder-slate-400"
+            style={{
+              width: "100%",
+              borderRadius: "8px",
+              border: "1px solid #475569",
+              background: "#1e293b",
+              padding: "12px",
+              color: "white",
+              fontSize: "14px"
+            }}
             required
           />
 
@@ -125,16 +169,35 @@ function LoginSignUp() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white placeholder-slate-400"
+            style={{
+              width: "100%",
+              borderRadius: "8px",
+              border: "1px solid #475569",
+              background: "#1e293b",
+              padding: "12px",
+              color: "white",
+              fontSize: "14px"
+            }}
             required
           />
 
-          {error && <p className="text-secondaryRed text-sm">{error}</p>}
+          {error && <p style={{ color: "#c62828", fontSize: "14px" }}>{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-primaryBlue px-6 py-3 font-bold text-white transition hover:opacity-90 disabled:opacity-50"
+            style={{
+              width: "100%",
+              borderRadius: "8px",
+              background: "#0d47a1",
+              color: "white",
+              padding: "12px 24px",
+              fontWeight: "bold",
+              border: "none",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.5 : 1,
+              fontSize: "14px"
+            }}
           >
             {loading ? "Loading..." : authScreen === "login" ? "Login" : "Register"}
           </button>
@@ -145,7 +208,17 @@ function LoginSignUp() {
             setAuthScreen(authScreen === "login" ? "register" : "login");
             setError("");
           }}
-          className="w-full mt-4 text-center text-slate-300 hover:text-white text-sm transition"
+          style={{
+            width: "100%",
+            marginTop: "16px",
+            textAlign: "center",
+            color: "#cbd5e1",
+            cursor: "pointer",
+            fontSize: "14px",
+            background: "none",
+            border: "none",
+            padding: "8px"
+          }}
         >
           {authScreen === "login" ? "Don't have an account? Register" : "Already have an account? Login"}
         </button>
@@ -156,6 +229,7 @@ function LoginSignUp() {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("planner");
   const [weightLossMode, setWeightLossMode] = useState(false);
   const [selectedSlots, setSelectedSlots] = useState<MealSlot[]>(["Breakfast", "Lunch", "Dinner"]);
@@ -168,29 +242,9 @@ function App() {
   const [profileApplied, setProfileApplied] = useState(false);
   const [fullName, setFullName] = useState("User");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const token = auth.getToken();
-    if (token) {
-      setIsAuthenticated(true);
-      api.getProfile(token).then((data) => {
-        if (!data.error) {
-          setFullName(data.fullName);
-          setCurrentWeight(data.currentWeight || 75);
-          setWeightGoal(data.weightGoal || 65);
-          setDietType(data.dietType || "Mixed");
-          setAdults(data.adultsCount || 2);
-          setChildren(data.childrenCount || 1);
-          setProfileApplied(true);
-        }
-      });
-    }
-  }, []);
-
-  if (!isAuthenticated) {
-    return <LoginSignUp />;
-  }
-
+  // Move all hooks BEFORE conditional returns
   const totalMealFactor = adults + children * 0.6;
 
   const allMealsForSlot = useMemo(() => {
@@ -230,7 +284,74 @@ function App() {
     });
   }, [filteredMeals, selectedSlots, allMealsForSlot]);
 
+  useEffect(() => {
+    console.log("App useEffect: Running");
+    try {
+      const token = auth.getToken();
+      console.log("App useEffect: Token found?", !!token);
+      if (token) {
+        setIsAuthenticated(true);
+        console.log("App useEffect: Token found, fetching profile");
+        api.getProfile(token)
+          .then((data) => {
+            console.log("App useEffect: Profile response:", data);
+            if (data && !data.error) {
+              setFullName(data.fullName || "User");
+              setCurrentWeight(data.currentWeight || 75);
+              setWeightGoal(data.weightGoal || 65);
+              setDietType(data.dietType || "Mixed");
+              setAdults(data.adultsCount || 2);
+              setChildren(data.childrenCount || 1);
+              setProfileApplied(true);
+            } else {
+              console.log("App useEffect: Profile error:", data?.error);
+              setError(data?.error || "Failed to load profile");
+            }
+            setIsLoading(false);
+          })
+          .catch((err) => {
+            console.error("App useEffect: Profile fetch error:", err);
+            setError(`Failed to load profile: ${err.message || err}`);
+            setIsLoading(false);
+          });
+      } else {
+        console.log("App useEffect: No token, showing login screen");
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error("App useEffect: Caught error:", err);
+      setError(String(err));
+      setIsLoading(false);
+    }
+  }, []);
+
   const activeDayPlan = weeklyPlan[selectedDayIndex];
+
+  // Show loading screen
+  if (isLoading) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        background: "linear-gradient(to bottom, #0b0f19, #1e293b, #0d47a1)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "16px",
+        fontFamily: "Arial, sans-serif",
+        color: "white"
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <h1 style={{ fontSize: "36px", fontWeight: "bold", marginBottom: "16px" }}>🍽️ Chop Planner</h1>
+          <p style={{ color: "#cbd5e1" }}>Loading...</p>
+          {error && <p style={{ color: "#f87171", marginTop: "16px" }}>{error}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginSignUp />;
+  }
 
   function toggleSlot(slot: MealSlot) {
     setSelectedSlots((prev) => {
@@ -295,6 +416,20 @@ function App() {
             </button>
           </div>
         </header>
+
+        {error && (
+          <div className="mt-6 rounded-lg border border-red-600 bg-red-950/40 p-4">
+            <p className="text-sm text-red-300">
+              <span className="font-bold">Error:</span> {error}
+            </p>
+            <button
+              onClick={() => setError(null)}
+              className="mt-2 text-sm text-red-400 hover:text-red-300"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="mt-6 flex flex-wrap gap-3">
           <button
