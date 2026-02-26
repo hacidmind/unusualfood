@@ -12,24 +12,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 let dbEnabled = false;
 
 if (MONGODB_URI) {
-  console.log('Attempting MongoDB connection...');
+  if (NODE_ENV !== 'production') console.log('Attempting MongoDB connection...');
   mongoose.connect(MONGODB_URI)
     .then(() => {
       dbEnabled = true;
-      console.log('✅ MongoDB connected - persistent storage enabled');
+      console.log('✅ MongoDB connected');
     })
     .catch((err) => {
       dbEnabled = false;
-      console.error('❌ MongoDB connection failed, falling back to in-memory mode:', err.message || err);
+      console.error('❌ MongoDB connection failed:', err.message || err);
     });
 } else {
-  console.log('⚠️  MONGODB_URI not set - running in TEST MODE (In-Memory Storage)');
-  console.log('📝 Data will be reset when server restarts\n');
+  console.warn('⚠️  MONGODB_URI not set - using in-memory storage');
 }
 
 // In-memory fallbacks for development/testing
@@ -313,8 +313,8 @@ app.get('/api/health', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🍽️ Unusual Chop Planner server running on http://localhost:${PORT}`);
-  console.log(`📊 Storage: ${dbEnabled ? 'MongoDB (Persistent)' : 'In-Memory (Test)'}\n`);
-  console.log('✅ All endpoints are working!');
-  console.log('📋 Try: curl http://localhost:5000/api/health\n');
+  console.log(`🍽️ Unusual Chop Planner server running on port ${PORT}`);
+  if (NODE_ENV !== 'production') {
+    console.log(`📊 Storage: ${dbEnabled ? 'MongoDB (Persistent)' : 'In-Memory (Test)'}`);
+  }
 });

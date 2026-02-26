@@ -60,11 +60,9 @@ function LoginSignUp() {
 
     try {
       const result = await api.login(email, password);
-      console.log("Login result:", result);
       if (result.error) {
         setError(result.error);
       } else if (result.token) {
-        console.log("Login successful, setting token:", result.token);
         auth.setToken(result.token);
         // Give it a moment for localStorage to sync, then reload
         setTimeout(() => window.location.reload(), 100);
@@ -72,7 +70,6 @@ function LoginSignUp() {
         setError("No token received from server");
       }
     } catch (err) {
-      console.error("Login error:", err);
       setError("Failed to connect to server. Make sure backend is running on port 5000");
     } finally {
       setLoading(false);
@@ -86,11 +83,9 @@ function LoginSignUp() {
 
     try {
       const result = await api.register(email, password, fullName);
-      console.log("Register result:", result);
       if (result.error) {
         setError(result.error);
       } else if (result.token) {
-        console.log("Registration successful, setting token:", result.token);
         auth.setToken(result.token);
         // Give it a moment for localStorage to sync, then reload
         setTimeout(() => window.location.reload(), 100);
@@ -98,7 +93,6 @@ function LoginSignUp() {
         setError("No token received from server");
       }
     } catch (err) {
-      console.error("Register error:", err);
       setError("Failed to connect to server. Make sure backend is running on port 5000");
     } finally {
       setLoading(false);
@@ -285,16 +279,12 @@ function App() {
   }, [filteredMeals, selectedSlots, allMealsForSlot]);
 
   useEffect(() => {
-    console.log("App useEffect: Running");
     try {
       const token = auth.getToken();
-      console.log("App useEffect: Token found?", !!token);
       if (token) {
         setIsAuthenticated(true);
-        console.log("App useEffect: Token found, fetching profile");
         api.getProfile(token)
           .then((data) => {
-            console.log("App useEffect: Profile response:", data);
             if (data && !data.error) {
               setFullName(data.fullName || "User");
               setCurrentWeight(data.currentWeight || 75);
@@ -304,22 +294,18 @@ function App() {
               setChildren(data.childrenCount || 1);
               setProfileApplied(true);
             } else {
-              console.log("App useEffect: Profile error:", data?.error);
               setError(data?.error || "Failed to load profile");
             }
             setIsLoading(false);
           })
           .catch((err) => {
-            console.error("App useEffect: Profile fetch error:", err);
             setError(`Failed to load profile: ${err.message || err}`);
             setIsLoading(false);
           });
       } else {
-        console.log("App useEffect: No token, showing login screen");
         setIsLoading(false);
       }
     } catch (err) {
-      console.error("App useEffect: Caught error:", err);
       setError(String(err));
       setIsLoading(false);
     }
@@ -469,9 +455,8 @@ function App() {
                     <button
                       key={slot}
                       onClick={() => toggleSlot(slot)}
-                      className={`rounded-lg border px-4 py-2 text-sm font-semibold ${
-                        enabled ? "border-blue-400 bg-blue-900/60 text-blue-100" : "border-slate-600 bg-slate-800 text-slate-300"
-                      }`}
+                      className={`rounded-lg border px-4 py-2 text-sm font-semibold ${enabled ? "border-blue-400 bg-blue-900/60 text-blue-100" : "border-slate-600 bg-slate-800 text-slate-300"
+                        }`}
                     >
                       {slot}
                     </button>
@@ -487,11 +472,10 @@ function App() {
                     <button
                       key={day}
                       onClick={() => setSelectedDayIndex(idx)}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                        idx === selectedDayIndex
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${idx === selectedDayIndex
                           ? "bg-primaryBlue text-white"
                           : "border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                      }`}
+                        }`}
                     >
                       {day}
                     </button>
