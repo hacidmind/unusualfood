@@ -40,13 +40,30 @@ let userIdCounter = 1;
 let planIdCounter = 1;
 
 // Middleware
-app.use(cors({
+const corsOptions = {
   origin: FRONTEND_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Preflight handler for all routes
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', dbEnabled });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'The Unusual Chop Planner API running', dbEnabled });
+});
 
 // Middleware to verify JWT
 const verifyToken = (req, res, next) => {
