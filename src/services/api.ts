@@ -20,6 +20,16 @@ export const api = {
     return response.json();
   },
 
+  // Forgot password - sends email (demo)
+  forgotPassword: async (email: string) => {
+    const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    return response.json();
+  },
+
   // Profile
   getProfile: async (token: string) => {
     const response = await fetch(`${API_URL}/api/profile`, {

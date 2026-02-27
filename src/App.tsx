@@ -52,6 +52,10 @@ function LoginSignUp() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMessage, setForgotMessage] = useState("");
+  const [forgotError, setForgotError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +100,19 @@ function LoginSignUp() {
       setError("Failed to connect to server. Make sure backend is running on port 5000");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotMessage("");
+    setForgotError("");
+    try {
+      const result = await api.forgotPassword(forgotEmail);
+      if (result.error) setForgotError(result.error);
+      else setForgotMessage(result.message || 'If an account exists, instructions were sent.');
+    } catch (err) {
+      setForgotError('Failed to contact server');
     }
   };
 
@@ -175,6 +192,17 @@ function LoginSignUp() {
             required
           />
 
+          {authScreen === 'login' && (
+            <div style={{ textAlign: 'right' }}>
+              <button
+                onClick={() => { setForgotOpen(true); setForgotEmail(email); setForgotMessage(''); setForgotError(''); }}
+                style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '13px', marginBottom: 8 }}
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+
           {error && <p style={{ color: "#c62828", fontSize: "14px" }}>{error}</p>}
 
           <button
@@ -217,6 +245,23 @@ function LoginSignUp() {
           {authScreen === "login" ? "Don't have an account? Register" : "Already have an account? Login"}
         </button>
       </div>
+      {forgotOpen && (
+        <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 480, background: '#0f172a', padding: 24, borderRadius: 12, border: '1px solid #374151' }}>
+            <h3 style={{ color: 'white', marginBottom: 8 }}>Reset Password</h3>
+            <p style={{ color: '#cbd5e1', marginBottom: 12 }}>Enter your email to receive password reset instructions.</p>
+            <form onSubmit={handleForgot}>
+              <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="Email" required style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #475569', background: '#0b1220', color: 'white', marginBottom: 8 }} />
+              {forgotError && <p style={{ color: '#f87171' }}>{forgotError}</p>}
+              {forgotMessage && <p style={{ color: '#34d399' }}>{forgotMessage}</p>}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button type="submit" style={{ flex: 1, padding: 10, borderRadius: 8, background: '#0d47a1', color: 'white', fontWeight: 'bold' }}>Send</button>
+                <button type="button" onClick={() => setForgotOpen(false)} style={{ flex: 1, padding: 10, borderRadius: 8, background: '#374151', color: 'white' }}>Close</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -361,7 +406,19 @@ function App() {
         childrenCount: children
       });
 
-      if (!result.error) {
+      if (result.error) {
+        setError(result.error);
+      } else {
+        // update local state from server response if present
+        const u = result.user;
+        if (u) {
+          setFullName(u.fullName || fullName);
+          setCurrentWeight(typeof u.currentWeight === 'number' ? u.currentWeight : currentWeight);
+          setWeightGoal(typeof u.weightGoal === 'number' ? u.weightGoal : weightGoal);
+          setDietType(u.dietType || dietType);
+          setAdults(u.adultsCount || adults);
+          setChildren(u.childrenCount || children);
+        }
         setProfileApplied(true);
       }
     }
@@ -473,8 +530,8 @@ function App() {
                       key={day}
                       onClick={() => setSelectedDayIndex(idx)}
                       className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${idx === selectedDayIndex
-                          ? "bg-primaryBlue text-white"
-                          : "border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        ? "bg-primaryBlue text-white"
+                        : "border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                     >
                       {day}
