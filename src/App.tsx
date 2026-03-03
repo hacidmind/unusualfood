@@ -283,6 +283,17 @@ function App() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Password reset page support (reads token from URL)
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const initialToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') || '' : '';
+  const [resetToken, setResetToken] = useState(initialToken);
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
+  const isResetPage = pathname === '/reset-password';
+
   // Move all hooks BEFORE conditional returns
   const totalMealFactor = adults + children * 0.6;
 
@@ -375,6 +386,44 @@ function App() {
           <h1 style={{ fontSize: "36px", fontWeight: "bold", marginBottom: "16px" }}>🍽️ Chop Planner</h1>
           <p style={{ color: "#cbd5e1" }}>Loading...</p>
           {error && <p style={{ color: "#f87171", marginTop: "16px" }}>{error}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  // If this is the client-side reset-password route, show simple reset UI
+  if (isResetPage) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'linear-gradient(to bottom, #0b0f19, #1e293b)' }}>
+        <div style={{ width: '100%', maxWidth: 480, padding: 24, borderRadius: 12, background: '#0f172a', border: '1px solid #374151' }}>
+          <h2 style={{ color: 'white', marginBottom: 8 }}>Reset Password</h2>
+          <p style={{ color: '#cbd5e1', marginBottom: 12 }}>Enter a new password for your account.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ padding: 10, borderRadius: 8, border: '1px solid #475569', background: '#0b1220', color: 'white' }} />
+            <input type="password" placeholder="Confirm password" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} style={{ padding: 10, borderRadius: 8, border: '1px solid #475569', background: '#0b1220', color: 'white' }} />
+            {resetError && <p style={{ color: '#f87171' }}>{resetError}</p>}
+            {resetMessage && <p style={{ color: '#34d399' }}>{resetMessage}</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button disabled={resetLoading} onClick={async () => {
+                setResetError(''); setResetMessage('');
+                if (!resetToken) return setResetError('Missing token');
+                if (!newPassword) return setResetError('Please enter a new password');
+                if (newPassword !== newPasswordConfirm) return setResetError('Passwords do not match');
+                setResetLoading(true);
+                try {
+                  const res = await api.resetPassword(resetToken, newPassword);
+                  if (res.error) setResetError(res.error);
+                  else {
+                    setResetMessage(res.message || 'Password reset successfully');
+                    setTimeout(() => { window.location.href = '/'; }, 2000);
+                  }
+                } catch (err) {
+                  setResetError('Failed to contact server');
+                } finally { setResetLoading(false); }
+              }} style={{ flex: 1, padding: 10, borderRadius: 8, background: '#0d47a1', color: 'white', fontWeight: 'bold' }}>{resetLoading ? 'Working...' : 'Reset Password'}</button>
+              <a href="/" style={{ display: 'inline-block', padding: '10px 12px', background: '#374151', color: 'white', borderRadius: 8, textAlign: 'center' }}>Cancel</a>
+            </div>
+          </div>
         </div>
       </div>
     );

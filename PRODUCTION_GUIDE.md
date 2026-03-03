@@ -36,6 +36,26 @@ MONGODB_URI=mongodb+srv://unusual_food_user:PASSWORD@YOUR_CLUSTER_NAME.mongodb.n
 NODE_ENV=production
 ```
 
+### 3. Email configuration (optional but required for password resets)
+
+The server uses **Google SMTP** to send password reset emails. If SMTP credentials are not provided, reset tokens are logged to the console (useful for local testing).
+
+**Google SMTP setup:**
+
+1. Use a Google account or create one (can be a business Gmail account)
+2. Enable [2-Step Verification](https://myaccount.google.com/security) on the account
+3. Generate an [App Password](https://myaccount.google.com/apppasswords) (select "Mail" and "Windows Computer")
+4. Add to `server/.env`:
+
+   ```env
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-16-character-app-password
+   ```
+
+   The sender address will be your Gmail address (from `SMTP_USER`).
+
+
+
 **DO NOT commit these .env files to version control.**
 
 ## Building for Production

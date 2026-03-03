@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
 import User from './models/User.js';
 import SavedPlan from './models/SavedPlan.js';
@@ -16,6 +17,30 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Normalize frontend URL by trimming any trailing slash to prevent CORS mismatches
 let FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 FRONTEND_URL = FRONTEND_URL.replace(/\/$/, '');
+
+// Configure Google SMTP for password reset emails
+let mailTransporter = null;
+let sendMail;
+
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+  sendMail = async (msg) => {
+    if (!mailTransporter) throw new Error('SMTP transporter not configured');
+    return await mailTransporter.sendMail(msg);
+  };
+  if (NODE_ENV !== 'production') console.log('Google SMTP mailer configured');
+} else {
+  sendMail = null;
+  if (NODE_ENV !== 'production') console.log('No SMTP credentials provided, password reset emails will be logged to console');
+}
 
 const MONGODB_URI = process.env.MONGODB_URI;
 let dbEnabled = false;
@@ -130,6 +155,10 @@ const updateUserById = async (id, updates) => {
   }
   const user = users[id];
   if (!user) return null;
+  // If updating password in in-memory store, hash it first
+  if (updates.password) {
+    updates.password = await bcrypt.hash(updates.password, 10);
+  }
   Object.assign(user, updates);
   user.updatedAt = new Date();
   return user;
@@ -261,17 +290,62 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
     const user = await findUserByEmail(email);
-    // Do not reveal whether the account exists. In production send an email with a reset link.
+    // Do not reveal whether the account exists.
     if (user) {
-      // Create a short-lived token for demonstration and log it (do NOT log in production)
+      // Create a short-lived token and send email (if SendGrid configured)
       const resetToken = jwt.sign({ id: user.id || user._id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-      console.log(`Password reset token for ${email}: ${resetToken}`);
+      const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+      if (sendMail && process.env.SMTP_USER) {
+        try {
+          const msg = {
+            to: email,
+            from: process.env.SMTP_USER,
+            subject: 'Reset your Unusual Chop Planner password',
+            text: `You requested a password reset. Click the link to reset your password: ${resetLink}`,
+            html: `<p>You requested a password reset. Click the link below to reset your password (link expires in 1 hour):</p><p><a href="${resetLink}">${resetLink}</a></p>`
+          };
+          await sendMail(msg);
+          if (NODE_ENV !== 'production') console.log('Sent password reset email to', email);
+        } catch (err) {
+          console.error('Failed to send reset email:', err?.message || err);
+        }
+      } else {
+        // Fallback: log token for development
+        console.log(`Password reset token for ${email}: ${resetToken}`);
+      }
     }
 
     res.json({ message: 'If an account with that email exists, password reset instructions have been sent.' });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ error: 'Failed to process forgot password request' });
+  }
+});
+
+// Reset password using token
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) return res.status(400).json({ error: 'Token and newPassword are required' });
+
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+
+    const userId = payload.id;
+    if (!userId) return res.status(400).json({ error: 'Invalid token payload' });
+
+    const updated = await updateUserById(userId, { password: newPassword });
+    if (!updated) return res.status(404).json({ error: 'User not found' });
+
+    res.json({ message: 'Password has been reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
   }
 });
 
