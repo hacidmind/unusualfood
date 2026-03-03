@@ -285,8 +285,7 @@ function App() {
 
   // Password reset page support (reads token from URL)
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const initialToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') || '' : '';
-  const [resetToken, setResetToken] = useState(initialToken);
+  const resetToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') || '' : '';
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
