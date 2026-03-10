@@ -12,38 +12,104 @@ const slotIcons: Record<MealSlot, string> = {
   Dinner: "🍽️"
 };
 
-const mealImageMap: Record<string, string> = {
-  "Pap (Ogi) and Moi Moi":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Yam and Egg Sauce":
-    "https://images.unsplash.com/photo-1609501676725-7186f017a4b0?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Ofada Rice and Ayamase (Light)":
-    "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Jollof Rice and Grilled Chicken":
-    "https://images.unsplash.com/photo-1598158781514-e2b34129b00f?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Efo Riro with Fish and Small Swallow":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Beans and Plantain":
-    "https://images.unsplash.com/photo-1609501676725-7186f017a4b0?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Egg White Omelette and Whole Wheat Toast":
-    "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Grilled Fish and Steamed Vegetables":
-    "https://images.unsplash.com/photo-1580959375944-abd7e991a971?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Vegetable Soup with Lean Chicken":
-    "https://images.unsplash.com/photo-1547592166-23ac45744acd?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Pap and Akara":
-    "https://images.unsplash.com/photo-1630383249896-424e7b14320e?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Eba and Light Egusi Soup":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Okra Soup with Fufu":
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Smoothie Bowl with Fruits":
-    "https://images.unsplash.com/photo-1590080876351-cd8c26fe7e0a?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Nigerian Pepper Soup":
-    "https://images.unsplash.com/photo-1547592166-23ac45744acd?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-  "Pepper Rice and Beef":
-    "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max"
+type MealImageMeta = {
+  src?: string;
+  alt: string;
+  fallbackLabel: string;
 };
+
+const mealImageMap: Record<string, MealImageMeta> = {
+  "Pap (Ogi) and Moi Moi": {
+    alt: "Pap with moi moi",
+    fallbackLabel: "Pap + Moi Moi"
+  },
+  "Yam and Egg Sauce": {
+    alt: "Boiled yam with egg sauce",
+    fallbackLabel: "Yam + Egg Sauce"
+  },
+  "Ofada Rice and Ayamase (Light)": {
+    alt: "Ofada rice with ayamase stew",
+    fallbackLabel: "Ofada + Ayamase"
+  },
+  "Jollof Rice and Grilled Chicken": {
+    alt: "Jollof rice with grilled chicken",
+    fallbackLabel: "Jollof + Chicken"
+  },
+  "Efo Riro with Fish and Small Swallow": {
+    alt: "Efo riro with fish and swallow",
+    fallbackLabel: "Efo Riro"
+  },
+  "Beans and Plantain": {
+    alt: "Beans served with fried plantain",
+    fallbackLabel: "Beans + Plantain"
+  },
+  "Egg White Omelette and Whole Wheat Toast": {
+    src: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
+    alt: "Egg white omelette with toast",
+    fallbackLabel: "Omelette + Toast"
+  },
+  "Grilled Fish and Steamed Vegetables": {
+    src: "https://images.unsplash.com/photo-1580959375944-abd7e991a971?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
+    alt: "Grilled fish with steamed vegetables",
+    fallbackLabel: "Grilled Fish"
+  },
+  "Vegetable Soup with Lean Chicken": {
+    alt: "Vegetable soup with lean chicken",
+    fallbackLabel: "Vegetable Soup"
+  },
+  "Pap and Akara": {
+    alt: "Pap served with akara",
+    fallbackLabel: "Pap + Akara"
+  },
+  "Eba and Light Egusi Soup": {
+    alt: "Eba with light egusi soup",
+    fallbackLabel: "Eba + Egusi"
+  },
+  "Okra Soup with Fufu": {
+    alt: "Okra soup with fufu",
+    fallbackLabel: "Okra + Fufu"
+  },
+  "Smoothie Bowl with Fruits": {
+    src: "https://images.unsplash.com/photo-1590080876351-cd8c26fe7e0a?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
+    alt: "Smoothie bowl topped with fruits",
+    fallbackLabel: "Smoothie Bowl"
+  },
+  "Nigerian Pepper Soup": {
+    alt: "Nigerian pepper soup",
+    fallbackLabel: "Pepper Soup"
+  },
+  "Pepper Rice and Beef": {
+    alt: "Pepper rice served with beef",
+    fallbackLabel: "Pepper Rice"
+  }
+};
+
+function MealImage({ meal }: { meal: Meal }) {
+  const image = mealImageMap[meal.name];
+
+  if (image?.src) {
+    return (
+      <img
+        src={image.src}
+        alt={image.alt}
+        className="aspect-[16/9] w-full rounded-lg object-cover"
+        loading="lazy"
+      />
+    );
+  }
+
+  return (
+    <div className="aspect-[16/9] w-full rounded-lg border border-slate-700 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.2),_transparent_35%),linear-gradient(135deg,_#172033,_#0f172a_55%,_#1d4ed8)] p-4">
+      <div className="flex h-full flex-col justify-between rounded-md border border-white/10 bg-black/10 p-4">
+        <p className="text-[11px] uppercase tracking-[0.25em] text-amber-200/80">{meal.slot}</p>
+        <div>
+          <p className="text-xl font-bold text-white">{image?.fallbackLabel || meal.name}</p>
+          <p className="mt-2 text-sm text-slate-200">{meal.ingredients.slice(0, 3).join(" • ")}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function LoginSignUp() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>("login");
@@ -602,12 +668,7 @@ function App() {
               <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
                 {activeDayPlan.plan.map(({ slot, meal }) => (
                   <div key={`${activeDayPlan.day}-${slot}`} className="h-full rounded-xl border border-slate-700 bg-slate-950/70 p-4">
-                    <img
-                      src={mealImageMap[meal.name] || "https://via.placeholder.com/400x225"}
-                      alt={meal.name}
-                      className="aspect-[16/9] w-full rounded-lg object-cover"
-                      loading="lazy"
-                    />
+                    <MealImage meal={meal} />
                     <div className="mt-3 flex items-start justify-between gap-4">
                       <div>
                         <p className="text-xs uppercase tracking-wider text-secondaryGreen">
