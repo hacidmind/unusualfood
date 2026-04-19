@@ -3,9 +3,16 @@ dist
 .DS_Store
 *.local
 coverage
+
+# env files
 .env
 .env.local
 .env.*.local
 server/.env
 server/.env.local
 server/.env.*.local
+
+# build artefacts — never commit these
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

@@ -1,115 +1,109 @@
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 
-export const api = {
-  // Auth
-  register: async (email: string, password: string, fullName: string) => {
-    const response = await fetch(`${API_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, fullName })
-    });
-    return response.json();
-  },
+// Shared types
+export interface DayPlan {
+  day: string;
+  plan: Array<{ slot: string; meal: { name: string; calories: number; portion: string; dietType?: string } }>;
+}
 
-  login: async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    return response.json();
-  },
+export interface ProfilePayload {
+  fullName: string;
+  currentWeight: number;
+  weightGoal: number;
+  dietType: string;
+  adultsCount: number;
+  childrenCount: number;
+}
 
-  // Forgot password - sends email (demo)
-  forgotPassword: async (email: string) => {
-    const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    return response.json();
-  },
+export interface PlanUpdate {
+  planName?: string;
+  meals?: DayPlan[];
+}
 
-  resetPassword: async (token: string, newPassword: string) => {
-    const response = await fetch(`${API_URL}/api/auth/reset-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, newPassword })
-    });
-    return response.json();
-  },
-
-  // Profile
-  getProfile: async (token: string) => {
-    const response = await fetch(`${API_URL}/api/profile`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return response.json();
-  },
-
-  updateProfile: async (
-    token: string,
-    data: { fullName: string; currentWeight: number; weightGoal: number; dietType: string; adultsCount: number; childrenCount: number }
-  ) => {
-    const response = await fetch(`${API_URL}/api/profile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    });
-    return response.json();
-  },
-
-  // Plans
-  savePlan: async (token: string, planName: string, meals: any) => {
-    const response = await fetch(`${API_URL}/api/plans`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ planName, meals })
-    });
-    return response.json();
-  },
-
-  getPlans: async (token: string) => {
-    const response = await fetch(`${API_URL}/api/plans`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return response.json();
-  },
-
-  updatePlan: async (token: string, planId: string, updates: { planName?: string; meals?: unknown }) => {
-    const response = await fetch(`${API_URL}/api/plans/${planId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(updates)
-    });
-    return response.json();
-  },
-
-  deletePlan: async (token: string, planId: string) => {
-    const response = await fetch(`${API_URL}/api/plans/${planId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return response.json();
-  },
-
-  // Health check
-  checkHealth: async () => {
-    const response = await fetch(`${API_URL}/api/health`);
-    return response.json();
+// Wraps fetch — returns parsed JSON, or { error } on non-2xx or network failure
+async function request(url: string, options?: RequestInit): Promise<Record<string, unknown>> {
+  const response = await fetch(url, options);
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return { error: (body as { error?: string }).error ?? `Request failed (${response.status})` };
   }
+  return body as Record<string, unknown>;
+}
+
+const authHeader = (token: string) => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${token}`,
+});
+
+export const api = {
+  // ── Auth ────────────────────────────────────────────────────────────────────
+  register: (email: string, password: string, fullName: string) =>
+    request(`${API_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, fullName }),
+    }),
+
+  login: (email: string, password: string) =>
+    request(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    }),
+
+  forgotPassword: (email: string) =>
+    request(`${API_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    request(`${API_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword }),
+    }),
+
+  // ── Profile ─────────────────────────────────────────────────────────────────
+  getProfile: (token: string) =>
+    request(`${API_URL}/api/profile`, { headers: authHeader(token) }),
+
+  updateProfile: (token: string, data: ProfilePayload) =>
+    request(`${API_URL}/api/profile`, {
+      method: 'PUT',
+      headers: authHeader(token),
+      body: JSON.stringify(data),
+    }),
+
+  // ── Plans ────────────────────────────────────────────────────────────────────
+  savePlan: (token: string, planName: string, meals: DayPlan[]) =>
+    request(`${API_URL}/api/plans`, {
+      method: 'POST',
+      headers: authHeader(token),
+      body: JSON.stringify({ planName, meals }),
+    }),
+
+  getPlans: (token: string) =>
+    request(`${API_URL}/api/plans`, { headers: authHeader(token) }),
+
+  updatePlan: (token: string, planId: string, updates: PlanUpdate) =>
+    request(`${API_URL}/api/plans/${planId}`, {
+      method: 'PUT',
+      headers: authHeader(token),
+      body: JSON.stringify(updates),
+    }),
+
+  deletePlan: (token: string, planId: string) =>
+    request(`${API_URL}/api/plans/${planId}`, {
+      method: 'DELETE',
+      headers: authHeader(token),
+    }),
 };
 
-// Local storage helpers
+// ── Auth token helpers ────────────────────────────────────────────────────────
 export const auth = {
-  setToken: (token: string) => localStorage.setItem('authToken', token),
-  getToken: () => localStorage.getItem('authToken'),
-  clearToken: () => localStorage.removeItem('authToken'),
-  isAuthenticated: () => !!localStorage.getItem('authToken')
+  setToken:   (token: string) => localStorage.setItem('authToken', token),
+  getToken:   ()              => localStorage.getItem('authToken'),
+  clearToken: ()              => localStorage.removeItem('authToken'),
 };

@@ -22,6 +22,15 @@ interface ProfileData {
 const isResetPage =
   typeof window !== "undefined" && window.location.pathname === "/reset-password";
 
+const DEFAULT_PROFILE: ProfileData = {
+  fullName: "User",
+  adults: 2,
+  children: 1,
+  currentWeight: 75,
+  weightGoal: 65,
+  dietType: "Mixed",
+};
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,14 +38,7 @@ export default function App() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(() => localStorage.getItem("theme") === "dark");
 
-  const [profile, setProfile] = useState<ProfileData>({
-    fullName: "User",
-    adults: 2,
-    children: 1,
-    currentWeight: 75,
-    weightGoal: 65,
-    dietType: "Mixed"
-  });
+  const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
   const [profileApplied, setProfileApplied] = useState(false);
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export default function App() {
     auth.clearToken();
     setIsAuthenticated(false);
     setProfileApplied(false);
-    setProfile({ fullName: "User", adults: 2, children: 1, currentWeight: 75, weightGoal: 65, dietType: "Mixed" });
+    setProfile(DEFAULT_PROFILE);
   }, []);
 
   const handleProfileSave = useCallback(

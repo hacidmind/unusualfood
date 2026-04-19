@@ -223,7 +223,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
           });
         } catch (e) { console.error('Email send error:', e?.message); }
       } else {
-        console.log(`[DEV] Reset link for ${email}: ${resetLink}`);
+        if (NODE_ENV !== 'production') console.log(`[DEV] Reset link for ${email}: ${resetLink}`);
       }
     }
     res.json({ message: 'If an account with that email exists, reset instructions have been sent.' });
