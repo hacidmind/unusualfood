@@ -1,796 +1,232 @@
-import { useMemo, useState, useEffect } from "react";
-import { meals, type Meal, type MealSlot, type DietType, weekDays } from "./data/meals";
+import { useState, useEffect, useCallback } from "react";
+import { type DietType } from "./data/meals";
 import { api, auth } from "./services/api";
+import { ToastProvider } from "./components/Toast";
+import { LoginSignUp } from "./components/LoginSignUp";
+import { ResetPasswordPage } from "./components/ResetPasswordPage";
+import { PlannerTab } from "./components/PlannerTab";
+import { ProfileTab } from "./components/ProfileTab";
+import { SavedPlansTab } from "./components/SavedPlansTab";
 
-type TabKey = "planner" | "profile";
-type AuthScreen = "login" | "register" | null;
+type TabKey = "planner" | "profile" | "saved";
 
-const mealSlots: MealSlot[] = ["Breakfast", "Lunch", "Dinner"];
-const slotIcons: Record<MealSlot, string> = {
-  Breakfast: "🍳",
-  Lunch: "🍲",
-  Dinner: "🍽️"
-};
-
-type MealImageMeta = {
-  src?: string;
-  alt: string;
-  fallbackLabel: string;
-};
-
-const mealImageMap: Record<string, MealImageMeta> = {
-  "Pap (Ogi) and Moi Moi": {
-    alt: "Pap with moi moi",
-    fallbackLabel: "Pap + Moi Moi"
-  },
-  "Yam and Egg Sauce": {
-    alt: "Boiled yam with egg sauce",
-    fallbackLabel: "Yam + Egg Sauce"
-  },
-  "Ofada Rice and Ayamase (Light)": {
-    alt: "Ofada rice with ayamase stew",
-    fallbackLabel: "Ofada + Ayamase"
-  },
-  "Jollof Rice and Grilled Chicken": {
-    alt: "Jollof rice with grilled chicken",
-    fallbackLabel: "Jollof + Chicken"
-  },
-  "Efo Riro with Fish and Small Swallow": {
-    alt: "Efo riro with fish and swallow",
-    fallbackLabel: "Efo Riro"
-  },
-  "Beans and Plantain": {
-    alt: "Beans served with fried plantain",
-    fallbackLabel: "Beans + Plantain"
-  },
-  "Egg White Omelette and Whole Wheat Toast": {
-    src: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-    alt: "Egg white omelette with toast",
-    fallbackLabel: "Omelette + Toast"
-  },
-  "Grilled Fish and Steamed Vegetables": {
-    src: "https://images.unsplash.com/photo-1580959375944-abd7e991a971?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-    alt: "Grilled fish with steamed vegetables",
-    fallbackLabel: "Grilled Fish"
-  },
-  "Vegetable Soup with Lean Chicken": {
-    alt: "Vegetable soup with lean chicken",
-    fallbackLabel: "Vegetable Soup"
-  },
-  "Pap and Akara": {
-    alt: "Pap served with akara",
-    fallbackLabel: "Pap + Akara"
-  },
-  "Eba and Light Egusi Soup": {
-    alt: "Eba with light egusi soup",
-    fallbackLabel: "Eba + Egusi"
-  },
-  "Okra Soup with Fufu": {
-    alt: "Okra soup with fufu",
-    fallbackLabel: "Okra + Fufu"
-  },
-  "Smoothie Bowl with Fruits": {
-    src: "https://images.unsplash.com/photo-1590080876351-cd8c26fe7e0a?ixlib=rb-4.0.3&w=400&h=300&crop=entropy&cs=tinysrgb&fit=max",
-    alt: "Smoothie bowl topped with fruits",
-    fallbackLabel: "Smoothie Bowl"
-  },
-  "Nigerian Pepper Soup": {
-    alt: "Nigerian pepper soup",
-    fallbackLabel: "Pepper Soup"
-  },
-  "Pepper Rice and Beef": {
-    alt: "Pepper rice served with beef",
-    fallbackLabel: "Pepper Rice"
-  }
-};
-
-function MealImage({ meal }: { meal: Meal }) {
-  const image = mealImageMap[meal.name];
-
-  if (image?.src) {
-    return (
-      <img
-        src={image.src}
-        alt={image.alt}
-        className="aspect-[16/9] w-full rounded-lg object-cover"
-        loading="lazy"
-      />
-    );
-  }
-
-  return (
-    <div className="aspect-[16/9] w-full rounded-lg border border-slate-700 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.2),_transparent_35%),linear-gradient(135deg,_#172033,_#0f172a_55%,_#1d4ed8)] p-4">
-      <div className="flex h-full flex-col justify-between rounded-md border border-white/10 bg-black/10 p-4">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-amber-200/80">{meal.slot}</p>
-        <div>
-          <p className="text-xl font-bold text-white">{image?.fallbackLabel || meal.name}</p>
-          <p className="mt-2 text-sm text-slate-200">{meal.ingredients.slice(0, 3).join(" • ")}</p>
-        </div>
-      </div>
-    </div>
-  );
+interface ProfileData {
+  fullName: string;
+  adults: number;
+  children: number;
+  currentWeight: number;
+  weightGoal: number;
+  dietType: DietType;
 }
 
-function LoginSignUp() {
-  const [authScreen, setAuthScreen] = useState<AuthScreen>("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotMessage, setForgotMessage] = useState("");
-  const [forgotError, setForgotError] = useState("");
+const isResetPage =
+  typeof window !== "undefined" && window.location.pathname === "/reset-password";
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+const APP_BG: React.CSSProperties = {
+  background: "linear-gradient(135deg, #0f0d0a 0%, #1e1005 50%, #080f06 100%)",
+  minHeight: "100vh",
+};
 
-    try {
-      const result = await api.login(email, password);
-      if (result.error) {
-        setError(result.error);
-      } else if (result.token) {
-        auth.setToken(result.token);
-        // Give it a moment for localStorage to sync, then reload
-        setTimeout(() => window.location.reload(), 100);
-      } else {
-        setError("No token received from server");
-      }
-    } catch (err) {
-      setError("Failed to connect to server. Make sure backend is running on port 5000");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const result = await api.register(email, password, fullName);
-      if (result.error) {
-        setError(result.error);
-      } else if (result.token) {
-        auth.setToken(result.token);
-        // Give it a moment for localStorage to sync, then reload
-        setTimeout(() => window.location.reload(), 100);
-      } else {
-        setError("No token received from server");
-      }
-    } catch (err) {
-      setError("Failed to connect to server. Make sure backend is running on port 5000");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleForgot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotMessage("");
-    setForgotError("");
-    try {
-      const result = await api.forgotPassword(forgotEmail);
-      if (result.error) setForgotError(result.error);
-      else setForgotMessage(result.message || 'If an account exists, instructions were sent.');
-    } catch (err) {
-      setForgotError('Failed to contact server');
-    }
-  };
-
-  return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(to bottom, #0b0f19, #1e293b, #0d47a1)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "16px",
-      fontFamily: "Arial, sans-serif"
-    }}>
-      <div style={{
-        width: "100%",
-        maxWidth: "448px",
-        borderRadius: "16px",
-        border: "1px solid #475569",
-        background: "rgba(15, 23, 42, 0.9)",
-        padding: "32px",
-        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.25)"
-      }}>
-        <h1 style={{ fontSize: "30px", fontWeight: "bold", color: "white", textAlign: "center", marginBottom: "8px" }}>🍽️ Chop Planner</h1>
-        <p style={{ color: "#cbd5e1", textAlign: "center", marginBottom: "32px" }}>Your weekly Lagos meal plan</p>
-
-        <form onSubmit={authScreen === "login" ? handleLogin : handleRegister} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {authScreen === "register" && (
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              style={{
-                width: "100%",
-                borderRadius: "8px",
-                border: "1px solid #475569",
-                background: "#1e293b",
-                padding: "12px",
-                color: "white",
-                fontSize: "14px"
-              }}
-              required
-            />
-          )}
-
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: "100%",
-              borderRadius: "8px",
-              border: "1px solid #475569",
-              background: "#1e293b",
-              padding: "12px",
-              color: "white",
-              fontSize: "14px"
-            }}
-            required
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: "100%",
-              borderRadius: "8px",
-              border: "1px solid #475569",
-              background: "#1e293b",
-              padding: "12px",
-              color: "white",
-              fontSize: "14px"
-            }}
-            required
-          />
-
-          {authScreen === 'login' && (
-            <div style={{ textAlign: 'right' }}>
-              <button
-                onClick={() => { setForgotOpen(true); setForgotEmail(email); setForgotMessage(''); setForgotError(''); }}
-                style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '13px', marginBottom: 8 }}
-              >
-                Forgot password?
-              </button>
-            </div>
-          )}
-
-          {error && <p style={{ color: "#c62828", fontSize: "14px" }}>{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              borderRadius: "8px",
-              background: "#0d47a1",
-              color: "white",
-              padding: "12px 24px",
-              fontWeight: "bold",
-              border: "none",
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.5 : 1,
-              fontSize: "14px"
-            }}
-          >
-            {loading ? "Loading..." : authScreen === "login" ? "Login" : "Register"}
-          </button>
-        </form>
-
-        <button
-          onClick={() => {
-            setAuthScreen(authScreen === "login" ? "register" : "login");
-            setError("");
-          }}
-          style={{
-            width: "100%",
-            marginTop: "16px",
-            textAlign: "center",
-            color: "#cbd5e1",
-            cursor: "pointer",
-            fontSize: "14px",
-            background: "none",
-            border: "none",
-            padding: "8px"
-          }}
-        >
-          {authScreen === "login" ? "Don't have an account? Register" : "Already have an account? Login"}
-        </button>
-      </div>
-      {forgotOpen && (
-        <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: 480, background: '#0f172a', padding: 24, borderRadius: 12, border: '1px solid #374151' }}>
-            <h3 style={{ color: 'white', marginBottom: 8 }}>Reset Password</h3>
-            <p style={{ color: '#cbd5e1', marginBottom: 12 }}>Enter your email to receive password reset instructions.</p>
-            <form onSubmit={handleForgot}>
-              <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="Email" required style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #475569', background: '#0b1220', color: 'white', marginBottom: 8 }} />
-              {forgotError && <p style={{ color: '#f87171' }}>{forgotError}</p>}
-              {forgotMessage && <p style={{ color: '#34d399' }}>{forgotMessage}</p>}
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <button type="submit" style={{ flex: 1, padding: 10, borderRadius: 8, background: '#0d47a1', color: 'white', fontWeight: 'bold' }}>Send</button>
-                <button type="button" onClick={() => setForgotOpen(false)} style={{ flex: 1, padding: 10, borderRadius: 8, background: '#374151', color: 'white' }}>Close</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function App() {
+export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("planner");
-  const [weightLossMode, setWeightLossMode] = useState(false);
-  const [selectedSlots, setSelectedSlots] = useState<MealSlot[]>(["Breakfast", "Lunch", "Dinner"]);
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(1);
-  const [currentWeight, setCurrentWeight] = useState(75);
-  const [weightGoal, setWeightGoal] = useState(65);
-  const [dietType, setDietType] = useState<DietType>("Mixed");
+  const [globalError, setGlobalError] = useState<string | null>(null);
+
+  const [profile, setProfile] = useState<ProfileData>({
+    fullName: "User",
+    adults: 2,
+    children: 1,
+    currentWeight: 75,
+    weightGoal: 65,
+    dietType: "Mixed"
+  });
   const [profileApplied, setProfileApplied] = useState(false);
-  const [fullName, setFullName] = useState("User");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Password reset page support (reads token from URL)
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const resetToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') || '' : '';
-  const [newPassword, setNewPassword] = useState('');
-  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetMessage, setResetMessage] = useState('');
-  const [resetError, setResetError] = useState('');
-  const isResetPage = pathname === '/reset-password';
-
-  // Move all hooks BEFORE conditional returns
-  const totalMealFactor = adults + children * 0.6;
-
-  const allMealsForSlot = useMemo(() => {
-    return mealSlots.reduce<Record<MealSlot, Meal[]>>(
-      (acc, slot) => {
-        acc[slot] = meals.filter((meal) => meal.slot === slot);
-        return acc;
-      },
-      { Breakfast: [], Lunch: [], Dinner: [] }
-    );
-  }, []);
-
-  const filteredMeals = useMemo(() => {
-    const result = {} as Record<MealSlot, Meal[]>;
-    for (const slot of mealSlots) {
-      let filtered = allMealsForSlot[slot];
-      if (weightLossMode) {
-        filtered = filtered.filter((meal) => meal.weightLossFriendly);
-      }
-      if (profileApplied) {
-        filtered = filtered.filter((meal) => meal.dietType === dietType);
-      }
-      result[slot] = filtered.length > 0 ? filtered : allMealsForSlot[slot];
-    }
-    return result;
-  }, [weightLossMode, dietType, profileApplied, allMealsForSlot]);
-
-  const weeklyPlan = useMemo(() => {
-    return weekDays.map((day, dayIndex) => {
-      const plan = selectedSlots.map((slot) => {
-        const options = filteredMeals[slot];
-        const mealIndex = dayIndex % Math.max(options.length, 1);
-        const meal = options[mealIndex] || allMealsForSlot[slot][0];
-        return { slot, meal };
-      });
-      return { day, plan };
-    });
-  }, [filteredMeals, selectedSlots, allMealsForSlot]);
 
   useEffect(() => {
-    try {
-      const token = auth.getToken();
-      if (token) {
-        setIsAuthenticated(true);
-        api.getProfile(token)
-          .then((data) => {
-            if (data && !data.error) {
-              setFullName(data.fullName || "User");
-              setCurrentWeight(data.currentWeight || 75);
-              setWeightGoal(data.weightGoal || 65);
-              setDietType(data.dietType || "Mixed");
-              setAdults(data.adultsCount || 2);
-              setChildren(data.childrenCount || 1);
-              setProfileApplied(true);
-            } else {
-              setError(data?.error || "Failed to load profile");
-            }
-            setIsLoading(false);
-          })
-          .catch((err) => {
-            setError(`Failed to load profile: ${err.message || err}`);
-            setIsLoading(false);
-          });
-      } else {
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setError(String(err));
+    const token = auth.getToken();
+    if (!token) {
       setIsLoading(false);
+      return;
     }
+    setIsAuthenticated(true);
+    api
+      .getProfile(token)
+      .then((data) => {
+        if (data && !data.error) {
+          setProfile({
+            fullName: data.fullName || "User",
+            adults: data.adultsCount || 2,
+            children: data.childrenCount || 1,
+            currentWeight: data.currentWeight || 75,
+            weightGoal: data.weightGoal || 65,
+            dietType: data.dietType || "Mixed"
+          });
+          setProfileApplied(true);
+        } else {
+          setGlobalError(data?.error || "Failed to load profile.");
+        }
+      })
+      .catch((err) => setGlobalError(`Failed to load profile: ${err.message || err}`))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const activeDayPlan = weeklyPlan[selectedDayIndex];
+  const handleAuthenticated = useCallback((fullName: string) => {
+    setProfile((prev) => ({ ...prev, fullName }));
+    setIsAuthenticated(true);
+  }, []);
 
-  // Show loading screen
+  const handleLogout = useCallback(() => {
+    auth.clearToken();
+    setIsAuthenticated(false);
+    setProfileApplied(false);
+    setProfile({
+      fullName: "User",
+      adults: 2,
+      children: 1,
+      currentWeight: 75,
+      weightGoal: 65,
+      dietType: "Mixed"
+    });
+  }, []);
+
+  const handleProfileSave = useCallback(
+    (data: ProfileData & { adults: number; children: number }) => {
+      setProfile(data);
+      setProfileApplied(true);
+    },
+    []
+  );
+
   if (isLoading) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        background: "linear-gradient(to bottom, #0b0f19, #1e293b, #0d47a1)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "16px",
-        fontFamily: "Arial, sans-serif",
-        color: "white"
-      }}>
+      <div style={{ ...APP_BG, display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
         <div style={{ textAlign: "center" }}>
-          <h1 style={{ fontSize: "36px", fontWeight: "bold", marginBottom: "16px" }}>🍽️ Chop Planner</h1>
-          <p style={{ color: "#cbd5e1" }}>Loading...</p>
-          {error && <p style={{ color: "#f87171", marginTop: "16px" }}>{error}</p>}
+          <div className="gradient-text" style={{ fontSize: 42, fontWeight: 800, marginBottom: 8 }}>
+            🍽️ Chop Planner
+          </div>
+          <p style={{ color: "#a8906a", fontSize: 16 }}>Loading your meal plan...</p>
+          {globalError && <p style={{ color: "#f87171", marginTop: 16 }}>{globalError}</p>}
         </div>
       </div>
     );
   }
 
-  // If this is the client-side reset-password route, show simple reset UI
   if (isResetPage) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'linear-gradient(to bottom, #0b0f19, #1e293b)' }}>
-        <div style={{ width: '100%', maxWidth: 480, padding: 24, borderRadius: 12, background: '#0f172a', border: '1px solid #374151' }}>
-          <h2 style={{ color: 'white', marginBottom: 8 }}>Reset Password</h2>
-          <p style={{ color: '#cbd5e1', marginBottom: 12 }}>Enter a new password for your account.</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <input type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ padding: 10, borderRadius: 8, border: '1px solid #475569', background: '#0b1220', color: 'white' }} />
-            <input type="password" placeholder="Confirm password" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} style={{ padding: 10, borderRadius: 8, border: '1px solid #475569', background: '#0b1220', color: 'white' }} />
-            {resetError && <p style={{ color: '#f87171' }}>{resetError}</p>}
-            {resetMessage && <p style={{ color: '#34d399' }}>{resetMessage}</p>}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button disabled={resetLoading} onClick={async () => {
-                setResetError(''); setResetMessage('');
-                if (!resetToken) return setResetError('Missing token');
-                if (!newPassword) return setResetError('Please enter a new password');
-                if (newPassword !== newPasswordConfirm) return setResetError('Passwords do not match');
-                setResetLoading(true);
-                try {
-                  const res = await api.resetPassword(resetToken, newPassword);
-                  if (res.error) setResetError(res.error);
-                  else {
-                    setResetMessage(res.message || 'Password reset successfully');
-                    setTimeout(() => { window.location.href = '/'; }, 2000);
-                  }
-                } catch (err) {
-                  setResetError('Failed to contact server');
-                } finally { setResetLoading(false); }
-              }} style={{ flex: 1, padding: 10, borderRadius: 8, background: '#0d47a1', color: 'white', fontWeight: 'bold' }}>{resetLoading ? 'Working...' : 'Reset Password'}</button>
-              <a href="/" style={{ display: 'inline-block', padding: '10px 12px', background: '#374151', color: 'white', borderRadius: 8, textAlign: 'center' }}>Cancel</a>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ToastProvider>
+        <ResetPasswordPage />
+      </ToastProvider>
     );
   }
 
   if (!isAuthenticated) {
-    return <LoginSignUp />;
+    return (
+      <ToastProvider>
+        <LoginSignUp onAuthenticated={handleAuthenticated} />
+      </ToastProvider>
+    );
   }
 
-  function toggleSlot(slot: MealSlot) {
-    setSelectedSlots((prev) => {
-      const hasSlot = prev.includes(slot);
-      if (hasSlot && prev.length === 1) return prev;
-      if (hasSlot) return prev.filter((s) => s !== slot);
-      return [...prev, slot];
-    });
-  }
-
-  async function applyProfile() {
-    setSaving(true);
-    const token = auth.getToken();
-    if (token) {
-      const result = await api.updateProfile(token, {
-        fullName,
-        currentWeight,
-        weightGoal,
-        dietType,
-        adultsCount: adults,
-        childrenCount: children
-      });
-
-      if (result.error) {
-        setError(result.error);
-      } else {
-        // update local state from server response if present
-        const u = result.user;
-        if (u) {
-          setFullName(u.fullName || fullName);
-          setCurrentWeight(typeof u.currentWeight === 'number' ? u.currentWeight : currentWeight);
-          setWeightGoal(typeof u.weightGoal === 'number' ? u.weightGoal : weightGoal);
-          setDietType(u.dietType || dietType);
-          setAdults(u.adultsCount || adults);
-          setChildren(u.childrenCount || children);
-        }
-        setProfileApplied(true);
-      }
-    }
-    setSaving(false);
-  }
-
-  async function saveMealPlan() {
-    const token = auth.getToken();
-    if (token) {
-      await api.savePlan(token, `Plan for ${new Date().toLocaleDateString()}`, weeklyPlan);
-      alert("Meal plan saved successfully!");
-    }
-  }
-
-  function logout() {
-    auth.clearToken();
-    setIsAuthenticated(false);
-    window.location.reload();
-  }
+  const tabs: { key: TabKey; label: string; icon: string }[] = [
+    { key: "planner", label: "Meal Planner", icon: "🗓️" },
+    { key: "profile", label: "My Profile",   icon: "👤" },
+    { key: "saved",   label: "Saved Plans",  icon: "📋" },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primaryBlack via-slate-950 to-primaryBlue text-white">
-      <div className="mx-auto max-w-6xl p-4 md:p-8">
-        <header className="rounded-2xl border border-slate-700 bg-slate-900/80 p-10 text-center shadow-panel md:p-16 flex flex-col md:flex-row items-center justify-between">
-          <div className="flex-1">
-            <h1 className="text-[48px] font-bold leading-tight text-white-900">🍽️ The Unusual Chop Planner</h1>
-            <h3 className="mt-4 text-[36px] font-medium leading-tight text-slate-200">
-              Your weekly Lagos meal plan - eat well, live well
-            </h3>
-          </div>
-          <div className="mt-6 md:mt-0">
-            <p className="text-slate-300">Welcome, <span className="font-bold text-blue-200">{fullName}</span></p>
-            <button
-              onClick={logout}
-              className="mt-3 rounded-lg bg-secondaryRed px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
-            >
-              Logout
-            </button>
-          </div>
-        </header>
+    <ToastProvider>
+      <div style={APP_BG} className="text-white">
+        <div className="mx-auto max-w-6xl p-4 md:p-8">
 
-        {error && (
-          <div className="mt-6 rounded-lg border border-red-600 bg-red-950/40 p-4">
-            <p className="text-sm text-red-300">
-              <span className="font-bold">Error:</span> {error}
-            </p>
-            <button
-              onClick={() => setError(null)}
-              className="mt-2 text-sm text-red-400 hover:text-red-300"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
+          {/* Header */}
+          <header className="glass rounded-2xl p-6 shadow-panel md:p-10" style={{ boxShadow: "0 8px 40px rgba(249,115,22,0.12), 0 2px 8px rgba(0,0,0,0.6)" }}>
+            <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+              <div>
+                <h1 className="gradient-text text-4xl font-extrabold leading-tight md:text-5xl">
+                  The Unusual Chop Planner
+                </h1>
+                <p className="mt-2 text-base" style={{ color: "#a8906a" }}>
+                  Your weekly Lagos meal plan — eat well, live well. 🌶️
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p style={{ color: "#a8906a", fontSize: 14 }}>
+                  Welcome back,{" "}
+                  <span className="font-bold" style={{ color: "#fbbf24" }}>{profile.fullName}</span>
+                </p>
+                <button
+                  onClick={handleLogout}
+                  className="mt-3 rounded-lg px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
+                  style={{ background: "#ef4444" }}
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </header>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${activeTab === "planner" ? "bg-primaryBlue text-white" : "bg-slate-800 text-slate-200"}`}
-            onClick={() => setActiveTab("planner")}
-          >
-            Meal Planner
-          </button>
-          <button
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${activeTab === "profile" ? "bg-primaryBlue text-white" : "bg-slate-800 text-slate-200"}`}
-            onClick={() => setActiveTab("profile")}
-          >
-            My Profile
-          </button>
+          {/* Global error banner */}
+          {globalError && (
+            <div className="mt-6 rounded-xl border border-red-700/50 p-4" style={{ background: "rgba(239,68,68,0.1)" }}>
+              <p className="text-sm text-red-300">
+                <span className="font-bold">Error:</span> {globalError}
+              </p>
+              <button
+                onClick={() => setGlobalError(null)}
+                className="mt-2 text-sm text-red-400 hover:text-red-300"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Tab nav */}
+          <nav className="mt-6 flex flex-wrap gap-3">
+            {tabs.map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`rounded-full px-5 py-2.5 text-sm font-bold transition-all ${
+                  activeTab === key
+                    ? "btn-primary shadow-glow"
+                    : "border hover:border-orange-600/50 hover:text-orange-300"
+                }`}
+                style={
+                  activeTab === key
+                    ? {}
+                    : { background: "rgba(10,6,2,0.5)", borderColor: "rgba(249,115,22,0.2)", color: "#c4a882" }
+                }
+              >
+                {icon} {label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Tab content */}
+          {activeTab === "planner" && (
+            <PlannerTab
+              adults={profile.adults}
+              children={profile.children}
+              dietType={profile.dietType}
+              profileApplied={profileApplied}
+            />
+          )}
+          {activeTab === "profile" && (
+            <ProfileTab
+              fullName={profile.fullName}
+              adults={profile.adults}
+              children={profile.children}
+              currentWeight={profile.currentWeight}
+              weightGoal={profile.weightGoal}
+              dietType={profile.dietType}
+              profileApplied={profileApplied}
+              onSave={handleProfileSave}
+            />
+          )}
+          {activeTab === "saved" && <SavedPlansTab />}
         </div>
-
-        {activeTab === "planner" ? (
-          <section className="mt-6 space-y-6">
-            <div className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 shadow-panel">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold">Planner Settings</h2>
-                  <p className="text-sm text-slate-300">Choose meal slots and optional weight-loss mode.</p>
-                </div>
-                <button
-                  onClick={() => setWeightLossMode((prev) => !prev)}
-                  className={`rounded-lg px-4 py-2 text-sm font-bold ${weightLossMode ? "bg-secondaryGreen text-white" : "bg-secondaryRed text-white"}`}
-                >
-                  Weight-Loss Mode: {weightLossMode ? "ON" : "OFF"}
-                </button>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {mealSlots.map((slot) => {
-                  const enabled = selectedSlots.includes(slot);
-                  return (
-                    <button
-                      key={slot}
-                      onClick={() => toggleSlot(slot)}
-                      className={`rounded-lg border px-4 py-2 text-sm font-semibold ${enabled ? "border-blue-400 bg-blue-900/60 text-blue-100" : "border-slate-600 bg-slate-800 text-slate-300"
-                        }`}
-                    >
-                      {slot}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 shadow-panel">
-              <div className="overflow-x-auto">
-                <div className="flex min-w-max gap-2">
-                  {weekDays.map((day, idx) => (
-                    <button
-                      key={day}
-                      onClick={() => setSelectedDayIndex(idx)}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${idx === selectedDayIndex
-                        ? "bg-primaryBlue text-white"
-                        : "border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                        }`}
-                    >
-                      {day}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 shadow-panel">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-blue-200">{activeDayPlan.day}</h3>
-                <button
-                  onClick={saveMealPlan}
-                  className="rounded-lg bg-primaryBlue px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
-                >
-                  Save Plan
-                </button>
-              </div>
-              <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                {activeDayPlan.plan.map(({ slot, meal }) => (
-                  <div key={`${activeDayPlan.day}-${slot}`} className="h-full rounded-xl border border-slate-700 bg-slate-950/70 p-4">
-                    <MealImage meal={meal} />
-                    <div className="mt-3 flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-secondaryGreen">
-                          {slotIcons[slot]} {slot}
-                        </p>
-                        <h4 className="text-lg font-semibold text-slate-100">{meal.name}</h4>
-                        <p className="text-xs text-slate-400 mt-1">{meal.dietType}</p>
-                      </div>
-                      <p className="rounded-md bg-primaryBlue px-2 py-1 text-xs font-semibold">{meal.calories} kcal</p>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-300">Portion: {meal.portion}</p>
-                    <p className="mt-1 text-sm text-slate-300">For your household: {totalMealFactor.toFixed(1)} portions</p>
-                    <details className="mt-3 rounded-md border border-slate-700 bg-slate-900/70 p-3">
-                      <summary className="cursor-pointer text-sm font-semibold text-secondaryGreen">How to cook</summary>
-                      <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-300">
-                        {meal.howToCook.map((step) => (
-                          <li key={step}>{step}</li>
-                        ))}
-                      </ol>
-                    </details>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </section>
-        ) : (
-          <section className="mt-6 rounded-2xl border border-slate-700 bg-slate-900/90 p-6 shadow-panel">
-            <h2 className="text-2xl font-semibold text-blue-200">My Profile</h2>
-            <p className="mt-2 text-slate-300">Set your household size and health goals.</p>
-
-            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <label className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
-                <span className="text-sm text-slate-300">Full Name</span>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 p-2 text-white"
-                />
-              </label>
-
-              <label className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
-                <span className="text-sm text-slate-300">Adults</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={adults}
-                  onChange={(e) => setAdults(Math.max(1, Number(e.target.value) || 1))}
-                  className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 p-2 text-white"
-                />
-              </label>
-
-              <label className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
-                <span className="text-sm text-slate-300">Children</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={children}
-                  onChange={(e) => setChildren(Math.max(0, Number(e.target.value) || 0))}
-                  className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 p-2 text-white"
-                />
-              </label>
-
-              <label className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
-                <span className="text-sm text-slate-300">Current Weight (kg)</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={currentWeight}
-                  onChange={(e) => setCurrentWeight(Math.max(0, Number(e.target.value) || 0))}
-                  className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 p-2 text-white"
-                />
-              </label>
-
-              <label className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
-                <span className="text-sm text-slate-300">Weight Goal (kg)</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={weightGoal}
-                  onChange={(e) => setWeightGoal(Math.max(0, Number(e.target.value) || 0))}
-                  className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 p-2 text-white"
-                />
-              </label>
-
-              <label className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
-                <span className="text-sm text-slate-300">Diet Type</span>
-                <select
-                  value={dietType}
-                  onChange={(e) => setDietType(e.target.value as DietType)}
-                  className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 p-2 text-white"
-                >
-                  <option value="Mixed">Mixed (African)</option>
-                  <option value="Vegan">Vegan (African)</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="mt-5 rounded-xl border border-blue-900 bg-blue-950/40 p-4">
-              <p className="text-sm text-slate-300">Total serving multiplier</p>
-              <p className="text-3xl font-bold text-blue-200">{totalMealFactor.toFixed(1)}x</p>
-              <p className="mt-2 text-sm text-slate-300">
-                Example: {adults} adults and {children} child{children !== 1 ? "ren" : ""} equals{" "}
-                <span className="font-semibold text-secondaryGreen">{totalMealFactor.toFixed(1)} portions</span> per meal.
-              </p>
-              <p className="mt-3 text-sm text-slate-300">
-                <span className="font-semibold">Weight Progress:</span> {currentWeight}kg → {weightGoal}kg ({Math.round(currentWeight - weightGoal)}kg to lose)
-              </p>
-            </div>
-
-            <button
-              onClick={applyProfile}
-              disabled={saving}
-              className="mt-6 w-full rounded-lg bg-secondaryGreen px-6 py-3 font-bold text-white transition hover:opacity-90 disabled:opacity-50"
-            >
-              {saving ? "Saving..." : profileApplied ? "✓ Profile Applied" : "Apply Profile"}
-            </button>
-          </section>
-        )}
       </div>
-    </div>
+    </ToastProvider>
   );
 }
-
-export default App;

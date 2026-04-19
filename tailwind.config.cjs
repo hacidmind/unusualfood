@@ -4,14 +4,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primaryBlue: "#0D47A1",
-        primaryBlack: "#0B0F19",
-        secondaryRed: "#C62828",
-        secondaryGreen: "#2E7D32"
+        primaryBlue: "#f97316",
+        primaryBlack: "#0f0d0a",
+        secondaryRed: "#ef4444",
+        secondaryGreen: "#16a34a",
       },
       boxShadow: {
-        panel: "0 10px 30px rgba(0, 0, 0, 0.25)"
-      }
+        panel: "0 8px 32px rgba(0, 0, 0, 0.6)",
+        glow: "0 0 24px rgba(249, 115, 22, 0.35)",
+        "glow-sm": "0 0 12px rgba(249, 115, 22, 0.2)",
+      },
     }
   },
   plugins: []

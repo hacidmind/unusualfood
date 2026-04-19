@@ -82,6 +82,14 @@ export const api = {
     return response.json();
   },
 
+  deletePlan: async (token: string, planId: string) => {
+    const response = await fetch(`${API_URL}/api/plans/${planId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.json();
+  },
+
   // Health check
   checkHealth: async () => {
     const response = await fetch(`${API_URL}/api/health`);
