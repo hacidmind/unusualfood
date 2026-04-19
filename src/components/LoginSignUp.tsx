@@ -32,7 +32,7 @@ export function LoginSignUp({ onAuthenticated, isDark, onToggleTheme }: Props) {
         : await api.register(email, password, fullName);
 
       if (result.error) {
-        setError(result.error);
+        setError(String(result.error));
       } else if (result.token) {
         auth.setToken(String(result.token));
         const u = result.user as Record<string, unknown> | undefined;
@@ -60,8 +60,8 @@ export function LoginSignUp({ onAuthenticated, isDark, onToggleTheme }: Props) {
     setForgotError("");
     try {
       const result = await api.forgotPassword(forgotEmail);
-      if (result.error) setForgotError(result.error);
-      else setForgotMessage(result.message || "If an account exists, instructions were sent.");
+      if (result.error) setForgotError(String(result.error));
+      else setForgotMessage(String(result.message || "If an account exists, instructions were sent."));
     } catch {
       setForgotError("Failed to contact server.");
     }

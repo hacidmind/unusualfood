@@ -98,7 +98,7 @@ export function PlannerTab({ adults, children: childCount, dietType, profileAppl
       `Plan — ${new Date().toLocaleDateString("en-NG", { weekday: "long", day: "numeric", month: "long" })}`,
       weeklyPlan
     );
-    if (result.error) showToast(result.error, "error");
+    if (result.error) showToast(String(result.error), "error");
     else showToast("Meal plan saved! ✅");
   }, [weeklyPlan, showToast]);
 

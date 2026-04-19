@@ -23,9 +23,9 @@ export function ResetPasswordPage({ isDark, onToggleTheme }: Props) {
     setLoading(true);
     try {
       const res = await api.resetPassword(token, newPassword);
-      if (res.error) setError(res.error);
+      if (res.error) setError(String(res.error));
       else {
-        setMessage(res.message || "Password reset successfully.");
+        setMessage(String(res.message || "Password reset successfully."));
         setTimeout(() => { window.location.href = "/"; }, 2000);
       }
     } catch {

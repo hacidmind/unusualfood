@@ -47,7 +47,7 @@ export function SavedPlansTab() {
     try {
       const data = await api.getPlans(token);
       if (Array.isArray(data)) setPlans(data);
-      else setError(data.error || "Failed to load plans.");
+      else setError(data.error ? String(data.error) : "Failed to load plans.");
     } catch {
       setError("Could not reach server.");
     } finally {
@@ -70,7 +70,7 @@ export function SavedPlansTab() {
     try {
       const result = await api.updatePlan(token, renamingId, { planName: renameValue.trim() });
       if (result.error) {
-        showToast(result.error, "error");
+        showToast(String(result.error), "error");
       } else {
         setPlans(prev => prev.map(p => getPlanId(p) === renamingId ? { ...p, planName: renameValue.trim() } : p));
         showToast("Plan renamed.");
@@ -91,7 +91,7 @@ export function SavedPlansTab() {
     if (!token) return;
     try {
       const result = await api.deletePlan(token, id);
-      if (result.error) showToast(result.error, "error");
+      if (result.error) showToast(String(result.error), "error");
       else {
         setPlans((prev) => prev.filter((p) => getPlanId(p) !== id));
         showToast("Plan deleted.");
