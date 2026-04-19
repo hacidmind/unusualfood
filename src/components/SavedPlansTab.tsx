@@ -2,18 +2,18 @@ import { useState, useEffect, useCallback } from "react";
 import { api, auth } from "../services/api";
 import { useToast } from "./Toast";
 
+interface DayPlan {
+  day: string;
+  plan: Array<{ slot: string; meal: { name: string; calories: number; portion: string } }>;
+}
+
 interface SavedPlan {
   id?: string;
   _id?: string;
   planName: string;
   createdAt: string;
-  meals: Array<{
-    day: string;
-    plan: Array<{
-      slot: string;
-      meal: { name: string; calories: number; portion: string };
-    }>;
-  }>;
+  weeklyPlan?: DayPlan[];
+  meals?: DayPlan[];   // legacy field — some old docs may use this
 }
 
 function getPlanId(plan: SavedPlan): string {
@@ -34,6 +34,9 @@ export function SavedPlansTab() {
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renaming, setRenaming] = useState(false);
   const { showToast } = useToast();
 
   const fetchPlans = useCallback(async () => {
@@ -53,6 +56,32 @@ export function SavedPlansTab() {
   }, []);
 
   useEffect(() => { fetchPlans(); }, [fetchPlans]);
+
+  const startRename = useCallback((plan: SavedPlan) => {
+    setRenamingId(getPlanId(plan));
+    setRenameValue(plan.planName);
+  }, []);
+
+  const commitRename = useCallback(async () => {
+    if (!renamingId || !renameValue.trim()) { setRenamingId(null); return; }
+    setRenaming(true);
+    const token = auth.getToken();
+    if (!token) { setRenamingId(null); setRenaming(false); return; }
+    try {
+      const result = await api.updatePlan(token, renamingId, { planName: renameValue.trim() });
+      if (result.error) {
+        showToast(result.error, "error");
+      } else {
+        setPlans(prev => prev.map(p => getPlanId(p) === renamingId ? { ...p, planName: renameValue.trim() } : p));
+        showToast("Plan renamed.");
+      }
+    } catch {
+      showToast("Failed to rename plan.", "error");
+    } finally {
+      setRenamingId(null);
+      setRenaming(false);
+    }
+  }, [renamingId, renameValue, showToast]);
 
   const deletePlan = useCallback(async (plan: SavedPlan) => {
     const id = getPlanId(plan);
@@ -128,7 +157,31 @@ export function SavedPlansTab() {
                 {/* Header row */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 18px", background: "var(--bg-card)" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 700, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{plan.planName}</p>
+                    {renamingId === id ? (
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <input
+                          className="theme-input"
+                          value={renameValue}
+                          onChange={e => setRenameValue(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setRenamingId(null); }}
+                          autoFocus
+                          style={{ padding: "6px 10px", fontSize: 14, flex: 1 }}
+                        />
+                        <button onClick={commitRename} disabled={renaming} className="btn-green" style={{ padding: "6px 12px", fontSize: 12, borderRadius: 7, flexShrink: 0 }}>
+                          {renaming ? "…" : "Save"}
+                        </button>
+                        <button onClick={() => setRenamingId(null)} className="btn-ghost" style={{ padding: "6px 10px", fontSize: 12, borderRadius: 7, flexShrink: 0 }}>✕</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <p style={{ margin: 0, fontWeight: 700, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{plan.planName}</p>
+                        <button
+                          onClick={() => startRename(plan)}
+                          title="Rename plan"
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--text-3)", padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                        >✏️</button>
+                      </div>
+                    )}
                     <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--text-3)" }}>📅 {formatDate(plan.createdAt)}</p>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
@@ -157,10 +210,10 @@ export function SavedPlansTab() {
                 </div>
 
                 {/* Expanded content */}
-                {isExpanded && Array.isArray(plan.meals) && (
+                {isExpanded && Array.isArray(plan.weeklyPlan ?? plan.meals) && (
                   <div style={{ borderTop: "1px solid var(--border)", padding: "16px 18px", background: "var(--bg-card-2)" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                      {plan.meals.map((dayPlan) => (
+                      {(plan.weeklyPlan ?? plan.meals ?? []).map((dayPlan) => (
                         <div key={dayPlan.day}>
                           <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700, color: "var(--text-2)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                             📆 {dayPlan.day}

@@ -1,43 +1,43 @@
 import mongoose from 'mongoose';
 
-const savedPlanSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+const mealSchema = new mongoose.Schema(
+  {
+    name:     { type: String, required: true },
+    calories: { type: Number },
+    portion:  { type: String },
+    dietType: { type: String }
   },
-  planName: {
-    type: String,
-    default: 'My Meal Plan'
+  { _id: false }
+);
+
+const slotSchema = new mongoose.Schema(
+  {
+    slot: { type: String, required: true },
+    meal: { type: mealSchema, required: true }
   },
-  meals: {
-    type: mongoose.Schema.Types.Mixed,
-    required: true
+  { _id: false }
+);
+
+const dayPlanSchema = new mongoose.Schema(
+  {
+    day:  { type: String, required: true },
+    plan: { type: [slotSchema], default: [] }
   },
-  weeklyPlan: [
-    {
-      day: String,
-      plan: [
-        {
-          slot: String,
-          meal: {
-            name: String,
-            calories: Number,
-            portion: String,
-            dietType: String
-          }
-        }
-      ]
-    }
-  ],
-  createdAt: {
-    type: Date,
-    default: Date.now
+  { _id: false }
+);
+
+const savedPlanSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true
+    },
+    planName:   { type: String, default: 'My Meal Plan', trim: true },
+    weeklyPlan: { type: [dayPlanSchema], default: [] }
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  { timestamps: true }   // auto-manages createdAt + updatedAt
+);
 
 export default mongoose.model('SavedPlan', savedPlanSchema);

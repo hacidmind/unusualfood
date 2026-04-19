@@ -82,6 +82,15 @@ export const api = {
     return response.json();
   },
 
+  updatePlan: async (token: string, planId: string, updates: { planName?: string; meals?: unknown }) => {
+    const response = await fetch(`${API_URL}/api/plans/${planId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(updates)
+    });
+    return response.json();
+  },
+
   deletePlan: async (token: string, planId: string) => {
     const response = await fetch(`${API_URL}/api/plans/${planId}`, {
       method: 'DELETE',
