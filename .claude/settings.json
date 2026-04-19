@@ -14,7 +14,8 @@
       "Bash(git commit -m ' *)",
       "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 5000 -State Listen | Select-Object -ExpandProperty OwningProcess\")",
       "WebFetch(domain:lagos-meal-planner.lovable.app)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
