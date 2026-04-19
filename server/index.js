@@ -69,10 +69,12 @@ let planIdCounter = 1;
 // Middleware
 const corsOptions = {
   origin: (origin, callback) => {
-    // allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    // compare normalized origins (strip trailing slash)
     const normalizedOrigin = origin.replace(/\/$/, '');
+    // In development, allow any localhost port
+    if (NODE_ENV !== 'production' && /^http:\/\/localhost:\d+$/.test(normalizedOrigin)) {
+      return callback(null, true);
+    }
     if (normalizedOrigin === FRONTEND_URL) {
       return callback(null, true);
     }

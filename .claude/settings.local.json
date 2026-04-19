@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(taskkill /PID 15684 /F)",
+      "Bash(cmd /c \"taskkill /PID 15684 /F\")",
+      "Bash(cmd /c \"netstat -ano | findstr :5000 | findstr LISTENING\")",
+      "Bash(cmd /c \"netstat -ano | findstr :5000\")",
+      "Bash(cmd /c \"taskkill /IM node.exe /F\")",
+      "Bash(cmd /c \"tasklist | findstr node\")",
+      "Bash(PORT=5001 node index.js)",
+      "Bash(cmd /c \"netstat -ano | findstr :5001\")",
+      "Bash(kill %1)",
+      "Bash(node index.js)",
+      "Bash(cmd /c \"netsh int ipv4 show excludedportrange protocol=tcp\")",
+      "Bash(powershell -Command \"netsh int ipv4 show excludedportrange protocol=tcp\")",
+      "Bash(powershell -Command \"Get-Process -Id \\(Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue\\).OwningProcess -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, CommandLine\")",
+      "WebSearch",
+      "WebFetch(domain:unsplash.com)",
+      "Bash(cd /tmp)",
+      "Bash(curl -sL \"https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&crop=entropy&cs=tinysrgb&fit=max\" -o pap_moi_moi.jpg)",
+      "Bash(curl -sL \"https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&crop=entropy&cs=tinysrgb&fit=max\" -o yam_egg.jpg)",
+      "Bash(curl -sL \"https://images.unsplash.com/photo-1567364816519-cbc9c4ffe1eb?w=400&h=300&crop=entropy&cs=tinysrgb&fit=max\" -o jollof.jpg)"
+    ]
+  }
+}

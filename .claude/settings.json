@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sL \"https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&crop=entropy&cs=tinysrgb&fit=max\" -o ofada.jpg)",
+      "Bash(curl -sL \"https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&crop=entropy&cs=tinysrgb&fit=max\" -o efo_riro.jpg)",
+      "Bash(curl -sL \"https://images.unsplash.com/photo-1618897996318-5a901fa90e5b?w=400&h=300&crop=entropy&cs=tinysrgb&fit=max\" -o beans_plantain.jpg)",
+      "Read(//tmp/**)",
+      "Bash(curl -sL \"https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&crop=entropy&cs=tinysrgb&fit=max\" -o \"C:/Users/user/AppData/Local/Temp/pap_moi_moi.jpg\")",
+      "Read(//c/Users/user/AppData/Local/Temp/**)",
+      "Bash(netstat -ano)",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs -I{} taskkill /PID {} /F)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 5000 -State Listen | Select-Object -ExpandProperty OwningProcess\")",
+      "WebFetch(domain:lagos-meal-planner.lovable.app)",
+      "Bash(git push *)"
+    ]
+  }
+}
