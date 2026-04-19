@@ -41,6 +41,7 @@ export const mealImageMap: Record<string, MealImageMeta> = {
     fallbackLabel: "Omelette + Toast"
   },
   "Grilled Fish and Steamed Vegetables": {
+    src: "/images/grilled_fish_and_steamed_vegetables.jpg",
     alt: "Grilled fish with steamed vegetables",
     fallbackLabel: "Grilled Fish"
   },
