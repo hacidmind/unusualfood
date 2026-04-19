@@ -55,23 +55,24 @@ export default function App() {
     const token = auth.getToken();
     if (!token) { setIsLoading(false); return; }
     setIsAuthenticated(true);
+
     api.getProfile(token)
       .then((data) => {
-        if (data && !data.error) {
-          setProfile({
-            fullName: data.fullName || "User",
-            adults: data.adultsCount || 2,
-            children: data.childrenCount || 1,
-            currentWeight: data.currentWeight || 75,
-            weightGoal: data.weightGoal || 65,
-            dietType: data.dietType || "Mixed"
-          });
-          setProfileApplied(true);
-        } else {
-          setGlobalError(data?.error || "Failed to load profile.");
+        if (data.error) {
+          setGlobalError(String(data.error));
+          return;
         }
+        setProfile({
+          fullName:      String(data.fullName      ?? "User"),
+          adults:        Number(data.adultsCount   ?? 2),
+          children:      Number(data.childrenCount ?? 1),
+          currentWeight: Number(data.currentWeight ?? 75),
+          weightGoal:    Number(data.weightGoal    ?? 65),
+          dietType:     (data.dietType as DietType) ?? "Mixed",
+        });
+        setProfileApplied(true);
       })
-      .catch((err) => setGlobalError(`Failed to load profile: ${err.message || err}`))
+      .catch(() => setGlobalError("Could not reach server. Check that the backend is running."))
       .finally(() => setIsLoading(false));
   }, []);
 

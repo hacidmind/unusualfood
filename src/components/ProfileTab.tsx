@@ -44,29 +44,42 @@ export function ProfileTab({
     const token = auth.getToken();
     if (!token) { showToast("Not authenticated", "error"); setSaving(false); return; }
 
-    const result = await api.updateProfile(token, {
-      fullName, currentWeight, weightGoal, dietType, adultsCount: adults, childrenCount: children
-    });
+    try {
+      const result = await api.updateProfile(token, {
+        fullName, currentWeight, weightGoal, dietType, adultsCount: adults, childrenCount: children
+      });
 
-    if (result.error) {
-      showToast(result.error, "error");
-    } else {
-      const u = result.user;
-      const saved: ProfileData = {
-        fullName: u?.fullName ?? fullName,
-        currentWeight: typeof u?.currentWeight === "number" ? u.currentWeight : currentWeight,
-        weightGoal: typeof u?.weightGoal === "number" ? u.weightGoal : weightGoal,
-        dietType: u?.dietType ?? dietType,
-        adults: u?.adultsCount ?? adults,
-        children: u?.childrenCount ?? children
-      };
-      setFullName(saved.fullName); setCurrentWeight(saved.currentWeight);
-      setWeightGoal(saved.weightGoal); setDietType(saved.dietType);
-      setAdults(saved.adults); setChildren(saved.children);
-      onSave(saved);
-      showToast("Profile saved! ✅");
+      if (result.error) {
+        showToast(String(result.error), "error");
+      } else {
+        // Cast to the shape the server returns
+        const u = result.user as {
+          fullName?: string; currentWeight?: number; weightGoal?: number;
+          dietType?: string; adultsCount?: number; childrenCount?: number;
+        } | undefined;
+
+        const saved: ProfileData = {
+          fullName:      u?.fullName      ?? fullName,
+          currentWeight: u?.currentWeight ?? currentWeight,
+          weightGoal:    u?.weightGoal    ?? weightGoal,
+          dietType:     (u?.dietType      ?? dietType) as DietType,
+          adults:        u?.adultsCount   ?? adults,
+          children:      u?.childrenCount ?? children,
+        };
+        setFullName(saved.fullName);
+        setCurrentWeight(saved.currentWeight);
+        setWeightGoal(saved.weightGoal);
+        setDietType(saved.dietType);
+        setAdults(saved.adults);
+        setChildren(saved.children);
+        onSave(saved);
+        showToast("Profile saved! ✅");
+      }
+    } catch {
+      showToast("Could not reach server. Check that the backend is running.", "error");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }, [fullName, adults, children, currentWeight, weightGoal, dietType, onSave, showToast]);
 
   const fields = [
