@@ -1,29 +1,12 @@
 import { useState } from "react";
 import { api } from "../services/api";
 
-const APP_BG: React.CSSProperties = {
-  background: "linear-gradient(135deg, #0f0d0a 0%, #1e1005 50%, #080f06 100%)",
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 16,
-  fontFamily: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
-};
+interface Props {
+  isDark: boolean;
+  onToggleTheme: () => void;
+}
 
-const inputStyle: React.CSSProperties = {
-  padding: "12px 14px",
-  borderRadius: 10,
-  border: "1px solid rgba(249,115,22,0.25)",
-  background: "rgba(10,6,2,0.7)",
-  color: "white",
-  fontSize: 14,
-  width: "100%",
-  boxSizing: "border-box",
-  outline: "none",
-};
-
-export function ResetPasswordPage() {
+export function ResetPasswordPage({ isDark, onToggleTheme }: Props) {
   const token = new URLSearchParams(window.location.search).get("token") || "";
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -32,8 +15,7 @@ export function ResetPasswordPage() {
   const [error, setError] = useState("");
 
   const handleReset = async () => {
-    setError("");
-    setMessage("");
+    setError(""); setMessage("");
     if (!token) return setError("Missing reset token.");
     if (!newPassword) return setError("Please enter a new password.");
     if (newPassword !== confirm) return setError("Passwords do not match.");
@@ -41,9 +23,8 @@ export function ResetPasswordPage() {
     setLoading(true);
     try {
       const res = await api.resetPassword(token, newPassword);
-      if (res.error) {
-        setError(res.error);
-      } else {
+      if (res.error) setError(res.error);
+      else {
         setMessage(res.message || "Password reset successfully.");
         setTimeout(() => { window.location.href = "/"; }, 2000);
       }
@@ -55,65 +36,50 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div style={APP_BG}>
-      <div style={{ width: "100%", maxWidth: 440 }}>
-        <div
-          className="glass"
-          style={{ borderRadius: 20, padding: "36px 32px", boxShadow: "0 8px 40px rgba(249,115,22,0.15), 0 2px 8px rgba(0,0,0,0.6)" }}
-        >
-          <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🔐</div>
-            <h2 className="gradient-text" style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>Reset Password</h2>
-            <p style={{ color: "#a8906a", fontSize: 14, marginTop: 6 }}>
-              Enter a new password for your account.
-            </p>
-          </div>
+    <div className="app-bg" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ position: "fixed", top: 16, right: 16 }}>
+        <button className="theme-toggle" onClick={onToggleTheme}>
+          {isDark ? "☀️" : "🌙"}
+          <span style={{ fontSize: 13 }}>{isDark ? "Light" : "Dark"}</span>
+        </button>
+      </div>
 
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
+          <h2 className="brand-text" style={{ fontSize: 24, margin: 0 }}>Reset Password</h2>
+          <p style={{ color: "var(--text-3)", fontSize: 14, marginTop: 6 }}>Enter a new password for your account.</p>
+        </div>
+
+        <div className="card" style={{ padding: "28px 24px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <input
-              type="password"
-              placeholder="New password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              style={inputStyle}
-            />
-            <input
-              type="password"
-              placeholder="Confirm password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              style={inputStyle}
-            />
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>New Password</label>
+              <input className="theme-input" type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>Confirm Password</label>
+              <input className="theme-input" type="password" placeholder="••••••••" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            </div>
 
             {error && (
-              <p style={{ color: "#f87171", fontSize: 13, margin: 0, padding: "8px 12px", background: "rgba(239,68,68,0.1)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)" }}>
+              <p style={{ color: "var(--red)", fontSize: 13, margin: 0, padding: "10px 12px", background: "rgba(239,68,68,0.07)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)" }}>
                 {error}
               </p>
             )}
             {message && (
-              <p style={{ color: "#34d399", fontSize: 13, margin: 0, padding: "8px 12px", background: "rgba(52,211,153,0.1)", borderRadius: 8, border: "1px solid rgba(52,211,153,0.3)" }}>
+              <p style={{ color: "var(--green)", fontSize: 13, margin: 0, padding: "10px 12px", background: "rgba(22,163,74,0.07)", borderRadius: 8, border: "1px solid rgba(22,163,74,0.2)" }}>
                 ✅ {message}
               </p>
             )}
 
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-              <button
-                disabled={loading}
-                onClick={handleReset}
-                className="btn-primary"
-                style={{ flex: 1, padding: 12, borderRadius: 10, fontSize: 14 }}
-              >
-                {loading ? "Working..." : "Reset Password"}
+              <button disabled={loading} onClick={handleReset} className="btn-green"
+                style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 14 }}>
+                {loading ? "Working…" : "Reset Password"}
               </button>
-              <a
-                href="/"
-                style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  padding: "12px 18px", borderRadius: 10, textDecoration: "none",
-                  fontSize: 14, fontWeight: 600, color: "#c4a882",
-                  background: "rgba(255,255,255,0.07)", border: "1px solid rgba(249,115,22,0.2)"
-                }}
-              >
+              <a href="/" className="btn-ghost"
+                style={{ flex: 1, padding: 12, borderRadius: 10, textDecoration: "none", fontSize: 14, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 Cancel
               </a>
             </div>

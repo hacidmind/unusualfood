@@ -13,10 +13,10 @@ const slotIcons: Record<MealSlot, string> = {
   Dinner: "🍽️"
 };
 
-const slotColors: Record<MealSlot, string> = {
-  Breakfast: "#f97316",
-  Lunch: "#f59e0b",
-  Dinner: "#fb923c",
+const slotAccent: Record<MealSlot, { bg: string; color: string; border: string }> = {
+  Breakfast: { bg: "#FFF7ED", color: "#EA580C", border: "rgba(249,115,22,0.3)" },
+  Lunch:     { bg: "#F0FDF4", color: "#15803D", border: "rgba(22,163,74,0.3)"  },
+  Dinner:    { bg: "#FEF3C7", color: "#B45309", border: "rgba(245,158,11,0.3)" },
 };
 
 interface Props {
@@ -37,15 +37,10 @@ export function PlannerTab({ adults, children: childCount, dietType, profileAppl
   const totalMealFactor = adults + childCount * 0.6;
 
   const allMealsForSlot = useMemo(
-    () =>
-      mealSlots.reduce<Record<MealSlot, Meal[]>>(
-        (acc, slot) => {
-          acc[slot] = meals.filter((m) => m.slot === slot);
-          return acc;
-        },
-        { Breakfast: [], Lunch: [], Dinner: [] }
-      ),
-    []
+    () => mealSlots.reduce<Record<MealSlot, Meal[]>>(
+      (acc, slot) => { acc[slot] = meals.filter((m) => m.slot === slot); return acc; },
+      { Breakfast: [], Lunch: [], Dinner: [] }
+    ), []
   );
 
   const filteredMeals = useMemo(() => {
@@ -103,59 +98,55 @@ export function PlannerTab({ adults, children: childCount, dietType, profileAppl
       `Plan — ${new Date().toLocaleDateString("en-NG", { weekday: "long", day: "numeric", month: "long" })}`,
       weeklyPlan
     );
-    if (result.error) {
-      showToast(result.error, "error");
-    } else {
-      showToast("Meal plan saved! ✅");
-    }
+    if (result.error) showToast(result.error, "error");
+    else showToast("Meal plan saved! ✅");
   }, [weeklyPlan, showToast]);
 
   return (
-    <section className="mt-6 space-y-5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
       {/* Settings panel */}
-      <div className="glass rounded-2xl p-5 shadow-panel">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="card" style={{ padding: "20px 24px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 16 }}>
           <div>
-            <h2 className="text-xl font-bold" style={{ color: "#fbbf24" }}>Planner Settings</h2>
-            <p className="text-sm mt-1" style={{ color: "#a8906a" }}>Customise your week — toggle slots and goals.</p>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "var(--text-1)" }}>Planner Settings</h2>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-3)" }}>Toggle meal slots and dietary goals</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
-              onClick={() => setWeightLossMode((prev) => !prev)}
-              className="rounded-lg px-4 py-2 text-sm font-bold text-white transition"
+              onClick={() => setWeightLossMode((p) => !p)}
               style={{
-                background: weightLossMode
-                  ? "linear-gradient(135deg, #16a34a, #15803d)"
-                  : "linear-gradient(135deg, #b45309, #92400e)",
-                border: "none",
-                cursor: "pointer",
+                padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+                fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+                background: weightLossMode ? "var(--green)" : "var(--bg-card-2)",
+                color: weightLossMode ? "#fff" : "var(--text-2)",
+                border: `1px solid ${weightLossMode ? "var(--green)" : "var(--border)"}`,
+                transition: "all 0.2s",
               }}
             >
-              {weightLossMode ? "✅ Weight-Loss ON" : "🔴 Weight-Loss OFF"}
+              {weightLossMode ? "✅ Weight-Loss ON" : "⚖️ Weight-Loss OFF"}
             </button>
-            <button
-              onClick={newPlan}
-              className="rounded-lg px-4 py-2 text-sm font-bold transition"
-              style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.35)", color: "#fb923c", cursor: "pointer" }}
-            >
+            <button onClick={newPlan} className="btn-ghost" style={{ padding: "8px 14px", fontSize: 13 }}>
               🔀 Shuffle Plan
             </button>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        {/* Slot toggles */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {mealSlots.map((slot) => {
-            const enabled = selectedSlots.includes(slot);
+            const on = selectedSlots.includes(slot);
+            const acc = slotAccent[slot];
             return (
               <button
                 key={slot}
                 onClick={() => toggleSlot(slot)}
-                className="rounded-lg px-4 py-2 text-sm font-semibold transition"
                 style={{
-                  cursor: "pointer",
-                  ...(enabled
-                    ? { background: "rgba(249,115,22,0.2)", border: "1px solid rgba(249,115,22,0.5)", color: "#fbbf24" }
-                    : { background: "rgba(0,0,0,0.3)", border: "1px solid rgba(249,115,22,0.12)", color: "#6b5a42" }),
+                  padding: "7px 14px", borderRadius: 8, fontWeight: 600, fontSize: 13,
+                  cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s",
+                  background: on ? acc.bg : "var(--bg-card-2)",
+                  color: on ? acc.color : "var(--text-3)",
+                  border: `1px solid ${on ? acc.border : "var(--border)"}`,
                 }}
               >
                 {slotIcons[slot]} {slot}
@@ -166,19 +157,19 @@ export function PlannerTab({ adults, children: childCount, dietType, profileAppl
       </div>
 
       {/* Day selector */}
-      <div className="glass rounded-2xl p-4 shadow-panel">
-        <div className="overflow-x-auto">
-          <div className="flex min-w-max gap-2">
+      <div className="card" style={{ padding: "16px 20px" }}>
+        <div style={{ overflowX: "auto" }}>
+          <div style={{ display: "flex", gap: 8, minWidth: "max-content" }}>
             {weekDays.map((day, idx) => (
               <button
                 key={day}
                 onClick={() => setSelectedDayIndex(idx)}
-                className="rounded-xl px-4 py-2 text-sm font-bold transition-all"
                 style={{
-                  cursor: "pointer",
+                  padding: "8px 16px", borderRadius: "var(--radius-pill)", fontWeight: 700,
+                  fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", border: "none",
                   ...(idx === selectedDayIndex
-                    ? { background: "linear-gradient(135deg, #f97316, #f59e0b)", color: "white", boxShadow: "0 0 14px rgba(249,115,22,0.4)" }
-                    : { background: "rgba(0,0,0,0.3)", border: "1px solid rgba(249,115,22,0.15)", color: "#a8906a" }),
+                    ? { background: "var(--green)", color: "#fff", boxShadow: "0 3px 10px rgba(22,163,74,0.3)" }
+                    : { background: "var(--bg-card-2)", color: "var(--text-2)", border: "1px solid var(--border)" }),
                 }}
               >
                 {day.slice(0, 3)}
@@ -188,35 +179,33 @@ export function PlannerTab({ adults, children: childCount, dietType, profileAppl
         </div>
       </div>
 
-      {/* Meal cards for selected day */}
-      <article className="glass rounded-2xl p-5 shadow-panel">
-        <div className="mb-5 flex items-center justify-between">
+      {/* Day meals */}
+      <div className="card" style={{ padding: "20px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h3 className="text-2xl font-extrabold" style={{ color: "#fbbf24" }}>{activeDayPlan.day}</h3>
-            <p className="text-sm mt-0.5" style={{ color: "#a8906a" }}>{activeDayPlan.plan.length} meal{activeDayPlan.plan.length !== 1 ? "s" : ""} planned</p>
+            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "var(--text-1)" }}>{activeDayPlan.day}</h3>
+            <p style={{ margin: "3px 0 0", fontSize: 13, color: "var(--text-3)" }}>
+              {activeDayPlan.plan.length} meal{activeDayPlan.plan.length !== 1 ? "s" : ""} planned
+            </p>
           </div>
-          <button
-            onClick={saveMealPlan}
-            className="btn-primary rounded-xl px-5 py-2.5 text-sm shadow-glow"
-          >
+          <button onClick={saveMealPlan} className="btn-green" style={{ padding: "10px 20px", fontSize: 14, borderRadius: 10 }}>
             💾 Save Plan
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {activeDayPlan.plan.map(({ slot, meal }) => (
             <MealCard
               key={`${activeDayPlan.day}-${slot}`}
               slot={slot}
               meal={meal}
               totalMealFactor={totalMealFactor}
-              slotColor={slotColors[slot]}
               onSwap={() => regenerateMeal(selectedDayIndex, slot)}
             />
           ))}
         </div>
-      </article>
-    </section>
+      </div>
+    </div>
   );
 }
 
@@ -224,76 +213,77 @@ interface MealCardProps {
   slot: MealSlot;
   meal: Meal;
   totalMealFactor: number;
-  slotColor: string;
   onSwap: () => void;
 }
 
-function MealCard({ slot, meal, totalMealFactor, slotColor, onSwap }: MealCardProps) {
+function MealCard({ slot, meal, totalMealFactor, onSwap }: MealCardProps) {
   const [cookOpen, setCookOpen] = useState(false);
+  const acc = slotAccent[slot];
 
   return (
     <div
-      className="flex flex-col rounded-2xl overflow-hidden transition-all"
       style={{
-        background: "rgba(10,6,2,0.7)",
-        border: `1px solid rgba(249,115,22,0.2)`,
-        borderTop: `3px solid ${slotColor}`,
-        boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius)",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "var(--shadow-sm)",
+        transition: "box-shadow 0.2s",
       }}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = "var(--shadow-md)")}
+      onMouseLeave={e => (e.currentTarget.style.boxShadow = "var(--shadow-sm)")}
     >
-      <MealImage meal={meal} />
+      {/* Image */}
+      <div style={{ borderRadius: "var(--radius) var(--radius) 0 0", overflow: "hidden" }}>
+        <MealImage meal={meal} />
+      </div>
 
-      <div className="flex flex-col flex-1 p-4">
-        {/* Slot label + calorie badge */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: slotColor }}>
+      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", flex: 1 }}>
+        {/* Slot + calorie row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <span style={{ background: acc.bg, color: acc.color, border: `1px solid ${acc.border}`, borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "3px 10px" }}>
             {slotIcons[slot]} {slot}
           </span>
-          <span
-            className="rounded-full px-2.5 py-0.5 text-xs font-bold"
-            style={{ background: "rgba(249,115,22,0.18)", color: "#fbbf24", border: "1px solid rgba(249,115,22,0.3)" }}
-          >
-            {meal.calories} kcal
-          </span>
+          <span className="badge-orange">{meal.calories} kcal</span>
         </div>
 
-        {/* Meal name */}
-        <h4 className="text-base font-bold text-white leading-snug mb-1">{meal.name}</h4>
-        <p className="text-xs mb-3" style={{ color: "#6b5a42" }}>{meal.dietType}</p>
+        {/* Name */}
+        <h4 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: "var(--text-1)", lineHeight: 1.3 }}>{meal.name}</h4>
+        <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--text-3)" }}>{meal.dietType}</p>
 
         {/* Portion info */}
-        <div className="text-sm space-y-1 mb-3" style={{ color: "#a8906a" }}>
-          <p><span style={{ color: "#6b5a42" }}>Portion:</span> {meal.portion}</p>
-          <p><span style={{ color: "#6b5a42" }}>Household:</span> {totalMealFactor.toFixed(1)} portions</p>
+        <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 12, lineHeight: 1.7 }}>
+          <span style={{ color: "var(--text-3)" }}>Portion:</span> {meal.portion}<br />
+          <span style={{ color: "var(--text-3)" }}>Household:</span> {totalMealFactor.toFixed(1)} portions
         </div>
 
-        {/* Swap button */}
+        {/* Swap */}
         <button
           onClick={onSwap}
-          className="rounded-lg px-3 py-1.5 text-xs font-bold transition mb-3"
-          style={{ background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.3)", color: "#fb923c", cursor: "pointer" }}
+          className="btn-ghost"
+          style={{ padding: "7px 12px", fontSize: 12, marginBottom: 10, width: "100%", textAlign: "center" }}
         >
           🔄 Swap Meal
         </button>
 
-        {/* How to cook accordion */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ border: "1px solid rgba(249,115,22,0.15)", background: "rgba(0,0,0,0.3)" }}
-        >
+        {/* How to cook */}
+        <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
           <button
             onClick={() => setCookOpen((o) => !o)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold"
-            style={{ color: "#f97316", cursor: "pointer", background: "none", border: "none" }}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "10px 14px", background: "var(--bg-card-2)", border: "none",
+              cursor: "pointer", fontSize: 13, fontWeight: 700, color: "var(--green)", fontFamily: "inherit",
+            }}
           >
             <span>👨‍🍳 How to cook</span>
-            <span style={{ fontSize: 12, opacity: 0.7 }}>{cookOpen ? "▲" : "▼"}</span>
+            <span style={{ fontSize: 11, color: "var(--text-3)" }}>{cookOpen ? "▲" : "▼"}</span>
           </button>
           {cookOpen && (
-            <ol className="px-4 pb-4 list-decimal pl-9 space-y-1.5" style={{ color: "#c4a882" }}>
-              {meal.howToCook.map((step, i) => (
-                <li key={i} className="text-sm leading-relaxed">{step}</li>
-              ))}
+            <ol style={{ margin: 0, padding: "10px 14px 12px 28px", color: "var(--text-2)", fontSize: 13, lineHeight: 1.7 }}>
+              {meal.howToCook.map((step, i) => <li key={i}>{step}</li>)}
             </ol>
           )}
         </div>
