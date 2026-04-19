@@ -76,8 +76,24 @@ export default function App() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const handleAuthenticated = useCallback((fullName: string) => {
-    setProfile((prev) => ({ ...prev, fullName }));
+  const handleAuthenticated = useCallback((userData: {
+    fullName: string;
+    adults?: number;
+    children?: number;
+    currentWeight?: number;
+    weightGoal?: number;
+    dietType?: string;
+  }) => {
+    const hasFullData = userData.adults != null;
+    setProfile({
+      fullName:      userData.fullName,
+      adults:        userData.adults        ?? DEFAULT_PROFILE.adults,
+      children:      userData.children      ?? DEFAULT_PROFILE.children,
+      currentWeight: userData.currentWeight ?? DEFAULT_PROFILE.currentWeight,
+      weightGoal:    userData.weightGoal    ?? DEFAULT_PROFILE.weightGoal,
+      dietType:     (userData.dietType as DietType) ?? DEFAULT_PROFILE.dietType,
+    });
+    setProfileApplied(hasFullData);
     setIsAuthenticated(true);
   }, []);
 

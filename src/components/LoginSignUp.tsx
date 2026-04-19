@@ -4,7 +4,7 @@ import { api, auth } from "../services/api";
 type AuthScreen = "login" | "register";
 
 interface Props {
-  onAuthenticated: (fullName: string) => void;
+  onAuthenticated: (data: { fullName: string; adults?: number; children?: number; currentWeight?: number; weightGoal?: number; dietType?: string }) => void;
   isDark: boolean;
   onToggleTheme: () => void;
 }
@@ -34,8 +34,16 @@ export function LoginSignUp({ onAuthenticated, isDark, onToggleTheme }: Props) {
       if (result.error) {
         setError(result.error);
       } else if (result.token) {
-        auth.setToken(result.token);
-        onAuthenticated(result.user?.fullName || fullName || "User");
+        auth.setToken(String(result.token));
+        const u = result.user as Record<string, unknown> | undefined;
+        onAuthenticated({
+          fullName:      String(u?.fullName || fullName || "User"),
+          adults:        u?.adultsCount   != null ? Number(u.adultsCount)   : undefined,
+          children:      u?.childrenCount != null ? Number(u.childrenCount) : undefined,
+          currentWeight: u?.currentWeight != null ? Number(u.currentWeight) : undefined,
+          weightGoal:    u?.weightGoal    != null ? Number(u.weightGoal)    : undefined,
+          dietType:      u?.dietType      != null ? String(u.dietType)      : undefined,
+        });
       } else {
         setError("No token received from server.");
       }
